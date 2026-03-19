@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the data
+    function isOwner(resourceUserId) {
+      return request.auth.uid == resourceUserId;
+    }
+    
+    // Farms collection - users can only access their own farms
+    match /farms/{farmId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow list: if isAuthenticated();
+    }
+    
+    // Harvests collection - users can only access their own harvests
+    match /harvests/{harvestId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow list: if isAuthenticated();
+    }
+  }
+}

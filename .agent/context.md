@@ -9,11 +9,11 @@
 
 | หัวข้อ            | รายละเอียด                             |
 | ----------------- | -------------------------------------- |
-| **ชื่อ Project**  | VPS                                    |
+| **ชื่อ Project**  | app_dev_mobile_coffee                  |
 | **วันที่เริ่ม**   | 1 มีนาคม 2569                          |
 | **เจ้าของ**       | qqkiller2006                           |
-| **จุดประสงค์**    | (ระบุจุดประสงค์หลักของ project ที่นี่) |
-| **สถานะปัจจุบัน** | 🟡 เริ่มต้น (Initial Setup)            |
+| **จุดประสงค์**    | พัฒนา mobile app สำหรับเชื่อมต่อข้อมูล coffee_สวน ให้ผู้ใช้จัดการผ่านโทรศัพท์ |
+| **สถานะปัจจุบัน** | ✅ Phase 2 Complete — Firebase Migration & Testing |
 
 ---
 
@@ -21,15 +21,20 @@
 
 ### 2.1 เป้าหมายหลัก (Main Objectives)
 
-- (ระบุเป้าหมายหลักของ project)
+- สร้าง React Native mobile app สำหรับ Android/iOS ให้เกษตรกรกาแฟบันทึกข้อมูลแปลง "coffee_สวน"
+- ออกแบบ UX ที่ใช้งานง่ายบนหน้าจอสัมผัส พร้อมการแจ้งเตือนงานดูแลสวน
+- เชื่อมต่อ API เพื่อนำเข้าข้อมูลผลผลิต/สภาพอากาศแบบ real-time โดยไม่ทำให้แอปค้าง
 
 ### 2.2 ขอบเขตงาน (Scope)
 
 - **ในขอบเขต (In Scope):**
-  - (ระบุสิ่งที่อยู่ในขอบเขต)
+  - พัฒนา React Native application (Android/iOS)
+  - ออกแบบ UI/UX responsive สำหรับผู้ใช้ภาคสนาม
+  - เชื่อมต่อ backend/API สำหรับข้อมูล coffee_สวน และระบบแจ้งเตือน
 
 - **นอกขอบเขต (Out of Scope):**
-  - (ระบุสิ่งที่ไม่อยู่ในขอบเขต)
+  - การพัฒนา web dashboard แยกต่างหาก
+  - ระบบ ERP ภายในโรงคั่วหรือการเงินเชิงลึกที่ไม่เกี่ยวกับ coffee_สวน
 
 ---
 
@@ -39,16 +44,37 @@
 
 | ประเภท         | เทคโนโลยี | เวอร์ชัน | หมายเหตุ |
 | -------------- | --------- | -------- | -------- |
-| OS             | (ระบุ)    | —        | —        |
-| Language       | (ระบุ)    | —        | —        |
-| Framework      | (ระบุ)    | —        | —        |
-| Database       | (ระบุ)    | —        | —        |
-| Infrastructure | (ระบุ)    | —        | —        |
+| OS             | Android / iOS | —    | Mobile targets |
+| Language       | TypeScript    | —    | ใช้กับ React Native |
+| Framework      | Expo (React Native) | SDK 55 / RN 0.83 | Cross-platform Android + Web |
+| Navigation     | React Navigation | v7 | Stack + Bottom Tabs |
+| Database       | Firebase Firestore (JS SDK) | ^12.11 | เก็บข้อมูล coffee_สวน |
+| Auth           | Firebase Authentication | ^12.11 | Email, Google, Facebook, LINE |
+| Animations     | React Native Reanimated | 4.2 | Splash, fade-in, stagger |
+| Testing        | Jest + custom mocks | ^29.7 | 11 suites, 105 tests |
 
 ### 3.2 แผนผังสถาปัตยกรรม (Architecture Diagram)
 
 ```
-(วาดแผนผังสถาปัตยกรรมที่นี่ เมื่อมีข้อมูลเพียงพอ)
+[Mobile App (Expo/RN)] — Android + Web
+   ├── Auth Flow (Welcome → Login/Register → ForgotPassword)
+   │   ├── Email/Password
+   │   ├── Google (signInWithPopup)
+   │   ├── Facebook (signInWithPopup)
+   │   └── LINE (OAuthProvider OIDC)
+   ├── Main Tabs
+   │   ├── Home (Dashboard with stats)
+   │   ├── My Farms → Add Farm (Step 1-4)
+   │   ├── Harvest (full CRUD + summary)
+   │   ├── Price/Analytics (charts + AI insights)
+   │   └── Profile (settings + theme)
+   ├── Services
+   │   ├── firebaseDb.ts (Firestore CRUD)
+   │   ├── exportService.ts (CSV export)
+   │   └── offlineService.ts (AsyncStorage cache)
+   └── [Firebase Backend]
+       ├── Auth (Firebase Authentication)
+       └── Firestore (farms + harvests collections)
 ```
 
 ---
@@ -56,15 +82,50 @@
 ## 4. โครงสร้าง Directory (Project Structure)
 
 ```
-VPS/
-├── .agent/                  # 🧠 AI Context System (ห้ามลบ)
-│   ├── context.md           # บริบท project (ไฟล์นี้)
-│   ├── project-log.md       # ประวัติการทำงาน
-│   ├── rules.md             # กฎของ project
+Coffee_Project/
+├── .agent/                       # 🧠 AI Context System (ห้ามลบ)
+│   ├── context.md
+│   ├── project-log.md
+│   ├── rules.md
 │   └── workflows/
-│       └── read-context.md  # workflow บังคับ AI อ่าน context
-├── AGENTS.md                # คำสั่งให้ AI อ่าน .agent/ เสมอ
-└── (โครงสร้างอื่นๆ จะเพิ่มเมื่อ project พัฒนาต่อ)
+├── .env                          # Environment variables (ไม่ commit)
+├── .env.example                  # Template สำหรับ env
+├── frontend/                     # 📱 Expo (React Native) app
+│   ├── App.tsx                   # Root component
+│   ├── app.json                  # Expo config
+│   ├── package.json              # Frontend deps + Jest config
+│   ├── src/
+│   │   ├── constants/            # Theme, colors, spacing
+│   │   ├── components/           # Reusable UI (Button, Input, PasswordStrength)
+│   │   ├── __tests__/            # Frontend tests
+│   │   │   ├── components/       # Button, Input, PasswordStrength tests
+│   │   │   └── screens/          # Home, Harvest, Price, Profile tests
+│   │   ├── lib/                  # Firebase JS SDK + services
+│   │   ├── types/                # Navigation type definitions
+│   │   ├── navigation/           # AppNavigator, AuthStack, MainTabs, FarmStack
+│   │   └── screens/
+│   │       ├── auth/             # Welcome, Login, Register, ForgotPassword, PrivacyPolicy
+│   │       ├── home/             # HomeScreen (Dashboard - dark theme)
+│   │       ├── farm/             # FarmList, AddFarmStep1-4
+│   │       ├── harvest/          # HarvestScreen (full UI from mockup)
+│   │       ├── price/            # PriceScreen/Analytics (full UI)
+│   │       └── profile/          # ProfileScreen (full UI)
+│   └── package.json
+├── backend/                      # 🚀 Node.js/Express API
+│   ├── package.json              # Backend deps + Jest config
+│   ├── tsconfig.json             # TypeScript config
+│   ├── jest.config.ts            # Test configuration
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── env.ts            # Environment validation
+│   │   ├── routes/
+│   │   │   ├── health.routes.ts  # Health check endpoint
+│   │   │   ├── farm.routes.ts    # Farm CRUD API
+│   │   │   └── harvest.routes.ts # Harvest CRUD + summary API
+│   │   ├── __tests__/            # Backend tests
+│   │   └── server.ts             # Express server entry
+│   └── dist/                     # Compiled JS output
+└── skills-lock.json
 ```
 
 ---
@@ -73,7 +134,7 @@ VPS/
 
 | Environment | URL / Path                         | หมายเหตุ      |
 | ----------- | ---------------------------------- | ------------- |
-| Development | `/home/qqkiller2006/ดาวน์โหลด/VPS` | เครื่อง local |
+| Development | `/home/qqkiller2006/data/github_backup/Mobile-Application/Coffee_Project/coffee-app` | เครื่อง local |
 | Staging     | (ระบุ เมื่อมี)                     | —             |
 | Production  | (ระบุ เมื่อมี)                     | —             |
 
@@ -99,6 +160,10 @@ VPS/
 | วันที่     | ผู้แก้ไข         | สิ่งที่เปลี่ยน                |
 | ---------- | ---------------- | ----------------------------- |
 | 2569-03-01 | AI (Antigravity) | สร้างไฟล์ context.md เริ่มต้น |
+| 2569-03-18 | AI (Cascade)     | เพิ่มบทบาท/กฎ Senior Mobile Dev |
+| 2569-03-19 | AI (Cascade)     | สร้าง Expo app ครบทุกหน้าจอจาก mockup, อัปเดต tech stack + directory structure |
+| 2569-03-19 | AI (Cascade)     | Restructure frontend/backend, setup Node.js/Express API, Jest testing, full UI screens (Harvest/Price/Profile) |
+| 2569-03-20 | AI (Cascade)     | Firebase migration: remove Supabase, use Firebase JS SDK for auth+db, add Facebook/LINE auth, animations, 105 unit tests |
 
 ---
 
