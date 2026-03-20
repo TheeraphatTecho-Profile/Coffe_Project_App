@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,61 +14,46 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { HarvestService, Harvest } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
+import {
+  filterHarvests,
+  getAvailableYears,
+  getFarmOptions,
+  getShiftSummary,
+  HarvestFilters,
+} from '../../lib/harvestFilters';
 
-const MOCK_HARVESTS: Harvest[] = [
-  {
-    id: '1',
-    farm_id: '1',
-    harvest_date: '2024-02-12',
-    variety: 'อาราบิก้า',
-    weight_kg: 320,
-    income: 9600,
-    shift: 'เช้า',
-    notes: '',
-    created_at: {} as any,
-    user_id: '',
-    farms: { name: 'สวนภูเรือ' },
-  },
-  {
-    id: '2',
-    farm_id: '2',
-    harvest_date: '2024-02-10',
-    variety: 'อาราบิก้า',
-    weight_kg: 280,
-    income: 8400,
-    shift: 'เย็น',
-    notes: '',
-    created_at: {} as any,
-    user_id: '',
-    farms: { name: 'สวนนาแห้ว' },
-  },
+const SHIFT_OPTIONS = [
+  { id: 'all', label: 'ทั้งหมด' },
+  { id: 'morning', label: 'รอบเช้า' },
+  { id: 'afternoon', label: 'รอบบ่าย' },
+  { id: 'evening', label: 'รอบกลางคืน' },
 ];
-
-const TOTAL_YIELD = 1240;
-const TOTAL_INCOME = 54200;
-const YIELD_GROWTH_PERCENT = 12;
 
 export const HarvestScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
-  const [searchText, setSearchText] = useState('');
-  const [selectedYear] = useState('2567');
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [filters, setFilters] = useState<HarvestFilters>({
+    search: '',
+    year: 'ทั้งหมด',
+    shift: 'all',
+    farmId: 'all',
+  });
 
   const fetchHarvests = useCallback(async () => {
     if (!user?.uid) {
-      setHarvests(MOCK_HARVESTS);
+      setHarvests([]);
       setLoading(false);
       return;
     }
     try {
       const data = await HarvestService.getAll(user.uid);
-      setHarvests(data.length > 0 ? data : MOCK_HARVESTS);
+      setHarvests(data);
     } catch (err) {
       console.error('Error fetching harvests:', err);
-      setHarvests(MOCK_HARVESTS);
+      setHarvests([]);
     } finally {
       setLoading(false);
     }
@@ -84,10 +69,69 @@ export const HarvestScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const formatNumber = (n: number): string => n.toLocaleString('th-TH');
+  const formatNumber = (n: number): string => n.toLocaleString('th-TH', { maximumFractionDigits: 1 });
 
-  const totalYield = harvests.reduce((sum, h) => sum + (h.weight_kg || 0), 0);
-  const totalIncome = harvests.reduce((sum, h) => sum + (h.income || 0), 0);
+  const handleFilterChange = (partial: Partial<HarvestFilters>) => {
+    setFilters(prev => ({ ...prev, ...partial }));
+  };
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      !!filters.search?.trim() ||
+      filters.year !== 'ทั้งหมด' ||
+      filters.shift !== 'all' ||
+      filters.farmId !== 'all'
+    );
+  }, [filters]);
+
+  const yearOptions = useMemo(() => ['ทั้งหมด', ...getAvailableYears(harvests)], [harvests]);
+  const farmOptions = useMemo(
+    () => [{ id: 'all', name: 'สวนทั้งหมด' }, ...getFarmOptions(harvests)],
+    [harvests]
+  );
+
+  const filteredHarvests = useMemo(() => filterHarvests(harvests, filters), [harvests, filters]);
+  const shiftSummary = useMemo(() => getShiftSummary(filteredHarvests), [filteredHarvests]);
+  const topShift = shiftSummary[0];
+
+  const topFarm = useMemo(() => {
+    if (!filteredHarvests.length) return null;
+    const stats = filteredHarvests.reduce((acc, h) => {
+      if (!h.farm_id) return acc;
+      const current = acc.get(h.farm_id) || {
+        name: h.farms?.name || 'ไร่กาแฟ',
+        weight: 0,
+        income: 0,
+      };
+      current.weight += h.weight_kg || 0;
+      current.income += h.income || 0;
+      acc.set(h.farm_id, current);
+      return acc;
+    }, new Map<string, { name: string; weight: number; income: number }>());
+    const sorted = Array.from(stats.values()).sort((a, b) => b.weight - a.weight);
+    return sorted[0] || null;
+  }, [filteredHarvests]);
+
+  const totalYield = useMemo(
+    () => filteredHarvests.reduce((sum, h) => sum + (h.weight_kg || 0), 0),
+    [filteredHarvests]
+  );
+  const totalIncome = useMemo(
+    () => filteredHarvests.reduce((sum, h) => sum + (h.income || 0), 0),
+    [filteredHarvests]
+  );
+  const entryCount = filteredHarvests.length;
+  const avgWeight = entryCount ? totalYield / entryCount : 0;
+
+  const handleResetFilters = () => {
+    setFilters({ search: '', year: 'ทั้งหมด', shift: 'all', farmId: 'all' });
+  };
+
+  const emptyStateTitle = harvests.length === 0 ? 'ยังไม่มีข้อมูลการเก็บเกี่ยว' : 'ไม่พบข้อมูลตามตัวกรอง';
+  const emptyStateSubtitle =
+    harvests.length === 0
+      ? 'เริ่มบันทึกผลผลิตจากสวนกาแฟของคุณ'
+      : 'ลองเปลี่ยนตัวกรองหรือรีเซ็ตเพื่อดูรายการทั้งหมด';
 
   return (
     <View style={styles.container}>
@@ -130,92 +174,198 @@ export const HarvestScreen: React.FC = () => {
               style={styles.searchInput}
               placeholder="ค้นหาตามวันที่หรือรหัสแปลง..."
               placeholderTextColor={COLORS.textLight}
-              value={searchText}
-              onChangeText={setSearchText}
+              value={filters.search}
+              onChangeText={(text) => handleFilterChange({ search: text })}
             />
           </View>
 
-          {/* Year filter */}
-          <View style={styles.yearRow}>
-            <Text style={styles.yearLabel}>ปีการผลิต</Text>
-            <TouchableOpacity style={styles.yearPicker}>
-              <Ionicons name="calendar-outline" size={16} color={COLORS.textSecondary} />
-              <Text style={styles.yearValue}> พ.ศ. {selectedYear}</Text>
-              <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
-            </TouchableOpacity>
+          {/* Filters */}
+          <View style={styles.filtersSection}>
+            <View style={styles.filterHeader}>
+              <Text style={styles.filterLabel}>ปีการผลิต</Text>
+              {hasActiveFilters && (
+                <TouchableOpacity onPress={handleResetFilters}>
+                  <Text style={styles.resetText}>ล้างตัวกรอง</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {yearOptions.map((year) => (
+                <TouchableOpacity
+                  key={year}
+                  style={[styles.chip, filters.year === year && styles.chipActive]}
+                  onPress={() => handleFilterChange({ year })}
+                >
+                  <Text style={[styles.chipText, filters.year === year && styles.chipTextActive]}>
+                    {year === 'ทั้งหมด' ? 'ทั้งหมด' : `พ.ศ. ${year}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={[styles.filterLabel, { marginTop: SPACING.lg }]}>รอบการเก็บเกี่ยว</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {SHIFT_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.id}
+                  style={[styles.chip, filters.shift === option.id && styles.chipActive]}
+                  onPress={() => handleFilterChange({ shift: option.id })}
+                >
+                  <Text style={[styles.chipText, filters.shift === option.id && styles.chipTextActive]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={[styles.filterLabel, { marginTop: SPACING.lg }]}>เลือกสวน</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {farmOptions.map((farm) => (
+                <TouchableOpacity
+                  key={farm.id}
+                  style={[styles.chip, filters.farmId === farm.id && styles.chipActive]}
+                  onPress={() => handleFilterChange({ farmId: farm.id })}
+                >
+                  <Text style={[styles.chipText, filters.farmId === farm.id && styles.chipTextActive]}>
+                    {farm.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Insights card */}
+          <View style={styles.insightsCard}>
+            <Text style={styles.sectionTitle}>สรุปตัวกรองปัจจุบัน</Text>
+            <View style={styles.insightRow}>
+              <View style={styles.insightStat}>
+                <Text style={styles.insightLabel}>จำนวนรายการ</Text>
+                <Text style={styles.insightValue}>{entryCount}</Text>
+              </View>
+              <View style={styles.insightStat}>
+                <Text style={styles.insightLabel}>เฉลี่ยต่อครั้ง</Text>
+                <Text style={styles.insightValue}>{formatNumber(avgWeight)} กก.</Text>
+              </View>
+            </View>
+            <View style={styles.insightRow}>
+              <View style={styles.insightStat}>
+                <Text style={styles.insightLabel}>สวนที่ทำผลผลิตสูงสุด</Text>
+                <Text style={styles.insightValueSmall}>
+                  {topFarm ? `${topFarm.name} • ${formatNumber(topFarm.weight)} กก.` : '—'}
+                </Text>
+              </View>
+              <View style={styles.insightStat}>
+                <Text style={styles.insightLabel}>รอบที่มีประสิทธิภาพ</Text>
+                <Text style={styles.insightValueSmall}>
+                  {topShift
+                    ? `${topShift.label} • ${topShift.count} ครั้ง (${formatNumber(topShift.totalWeight)} กก.)`
+                    : '—'}
+                </Text>
+              </View>
+            </View>
           </View>
 
           {/* Harvest entries */}
-          {(harvests.length > 0 ? harvests : MOCK_HARVESTS).map((h: any) => (
-            <TouchableOpacity 
-              key={h.id} 
-              style={styles.harvestCard}
-              onPress={() => navigation.navigate('HarvestDetail', { harvestId: h.id })}
-            >
-              {/* Date badge */}
-              <View style={styles.dateBadge}>
-                <Text style={styles.dateMonth}>{h.monthShort}</Text>
-                <Text style={styles.dateDay}>{h.date}</Text>
-                <Text style={styles.dateYear}>{h.year}</Text>
-              </View>
+          {filteredHarvests.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Ionicons name="basket-outline" size={40} color={COLORS.textLight} />
+              <Text style={styles.emptyTitle}>{emptyStateTitle}</Text>
+              <Text style={styles.emptyText}>{emptyStateSubtitle}</Text>
+            </View>
+          ) : (
+            filteredHarvests.map((h) => {
+              const date = h.harvest_date ? new Date(h.harvest_date) : new Date();
+              const day = date.getDate().toString();
+              const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+              const monthShort = monthNames[date.getMonth()] || '';
+              const yearBE = (date.getFullYear() + 543).toString();
 
-              {/* Details */}
-              <View style={styles.harvestDetails}>
-                <View style={styles.harvestTopRow}>
-                  <View style={[styles.tagBadge, { backgroundColor: h.tagColor || COLORS.primary }]}>
-                    <Text style={styles.tagText}>{h.tag || 'A-01'}</Text>
+              return (
+                <TouchableOpacity
+                  key={h.id}
+                  style={styles.harvestCard}
+                  onPress={() => navigation.navigate('HarvestDetail', { harvestId: h.id })}
+                >
+                  {/* Date badge */}
+                  <View style={styles.dateBadge}>
+                    <Text style={styles.dateMonth}>{monthShort}</Text>
+                    <Text style={styles.dateDay}>{day}</Text>
+                    <Text style={styles.dateYear}>{yearBE}</Text>
                   </View>
-                  <Text style={styles.harvestShift}>{h.shift}</Text>
-                </View>
-                <Text style={styles.harvestVariety}>{h.variety}</Text>
 
-                <View style={styles.harvestStatsRow}>
-                  <View style={styles.harvestStat}>
-                    <Text style={styles.harvestStatLabel}>ปริมาณสุทธิ</Text>
-                    <View style={styles.harvestStatValueRow}>
-                      <Text style={styles.harvestStatValue}>{formatNumber(h.weightKg || h.weight_kg || 0)}</Text>
-                      <Text style={styles.harvestStatUnit}> กก.</Text>
+                  {/* Details */}
+                  <View style={styles.harvestDetails}>
+                    <View style={styles.harvestTopRow}>
+                      <View style={[styles.tagBadge, { backgroundColor: COLORS.primary }]}>
+                        <Text style={styles.tagText}>{h.farms?.name || 'สวน'}</Text>
+                      </View>
+                      <Text style={styles.harvestShift}>{h.shift || '-'}</Text>
+                    </View>
+                    <Text style={styles.harvestVariety}>{h.variety || 'กาแฟ'}</Text>
+
+                    <View style={styles.harvestStatsRow}>
+                      <View style={styles.harvestStat}>
+                        <Text style={styles.harvestStatLabel}>ปริมาณสุทธิ</Text>
+                        <View style={styles.harvestStatValueRow}>
+                          <Text style={styles.harvestStatValue}>{formatNumber(h.weight_kg || 0)}</Text>
+                          <Text style={styles.harvestStatUnit}> กก.</Text>
+                        </View>
+                      </View>
+                      <View style={styles.harvestStat}>
+                        <Text style={styles.harvestStatLabel}>รายได้รวม</Text>
+                        <View style={styles.harvestStatValueRow}>
+                          <Text style={[styles.harvestStatValue, { color: COLORS.secondary }]}>
+                            {formatNumber(h.income || 0)}
+                          </Text>
+                          <Text style={styles.harvestStatUnit}> บาท</Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
-                  <View style={styles.harvestStat}>
-                    <Text style={styles.harvestStatLabel}>รายได้รวม</Text>
-                    <View style={styles.harvestStatValueRow}>
-                      <Text style={[styles.harvestStatValue, { color: COLORS.secondary }]}>
-                        {formatNumber(h.income || 0)}
-                      </Text>
-                      <Text style={styles.harvestStatUnit}> บาท</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+                </TouchableOpacity>
+              );
+            })
+          )}
 
-          {/* Total yield card */}
+          {/* Total yield card — real computed values */}
           <View style={styles.totalYieldCard}>
-            <Text style={styles.totalYieldLabel}>TOTAL YIELD {selectedYear}</Text>
+            <Text style={styles.totalYieldLabel}>
+              ผลผลิตรวม {filters.year === 'ทั้งหมด' ? 'ทั้งหมด' : `พ.ศ. ${filters.year}`}
+            </Text>
             <View style={styles.totalYieldRow}>
-              <Text style={styles.totalYieldValue}>{formatNumber(TOTAL_YIELD)}</Text>
+              <Text style={styles.totalYieldValue}>{formatNumber(totalYield)}</Text>
               <Text style={styles.totalYieldUnit}> กก.</Text>
             </View>
-            <View style={styles.growthBadge}>
-              <Ionicons name="trending-up" size={14} color={COLORS.success} />
-              <Text style={styles.growthText}>
-                {' '}+{YIELD_GROWTH_PERCENT}% จากปีที่แล้ว
-              </Text>
-            </View>
           </View>
 
-          {/* Total income card */}
+          {/* Total income card — real computed values */}
           <View style={styles.totalIncomeCard}>
-            <Text style={styles.totalIncomeLabel}>TOTAL INCOME</Text>
-            <Text style={styles.totalIncomeValue}>{formatNumber(TOTAL_INCOME)}</Text>
+            <Text style={styles.totalIncomeLabel}>รายได้รวม</Text>
+            <Text style={styles.totalIncomeValue}>{formatNumber(totalIncome)}</Text>
             <Text style={styles.totalIncomeUnit}>บาท</Text>
           </View>
+
+          {shiftSummary.length > 0 && (
+            <View style={styles.shiftSummaryCard}>
+              <Text style={styles.sectionTitle}>สรุปรอบเก็บเกี่ยว</Text>
+              {shiftSummary.map((item) => (
+                <View key={item.id} style={styles.shiftSummaryRow}>
+                  <Text style={styles.shiftSummaryLabel}>{item.label}</Text>
+                  <Text style={styles.shiftSummaryValue}>
+                    {item.count} ครั้ง • {formatNumber(item.totalWeight)} กก.
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
         </ScrollView>
 
         {/* FAB */}
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('AddHarvest')}
+        >
           <Ionicons name="add" size={28} color={COLORS.white} />
         </TouchableOpacity>
       </SafeAreaView>
@@ -241,6 +391,7 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.xs, fontWeight: '700', color: COLORS.secondary,
     letterSpacing: 1.5, marginBottom: SPACING.sm,
   },
+  sectionTitle: { fontSize: FONTS.sizes.sm, fontWeight: '700', color: COLORS.textSecondary, marginBottom: SPACING.md, letterSpacing: 0.5 },
   title: { fontSize: FONTS.sizes.xxl, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.md },
   subtitle: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, lineHeight: 20, marginBottom: SPACING.xxl },
 
@@ -253,18 +404,37 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: FONTS.sizes.sm, color: COLORS.text },
 
-  // Year filter
-  yearRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  // Filters
+  filtersSection: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
     marginBottom: SPACING.xxl,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
   },
-  yearLabel: { fontSize: FONTS.sizes.md, fontWeight: '600', color: COLORS.text },
-  yearPicker: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
-    backgroundColor: COLORS.white, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.borderLight,
+  filterHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
-  yearValue: { fontSize: FONTS.sizes.sm, fontWeight: '500', color: COLORS.text },
+  filterLabel: { fontSize: FONTS.sizes.md, fontWeight: '600', color: COLORS.text },
+  resetText: { fontSize: FONTS.sizes.sm, color: COLORS.secondary, fontWeight: '600' },
+  chipScroll: { marginVertical: SPACING.sm },
+  chip: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceWarm,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    marginRight: SPACING.sm,
+  },
+  chipActive: {
+    backgroundColor: COLORS.secondary,
+    borderColor: COLORS.secondary,
+  },
+  chipText: { fontSize: FONTS.sizes.sm, color: COLORS.text },
+  chipTextActive: { color: COLORS.white, fontWeight: '600' },
 
   // Harvest card
   harvestCard: {
@@ -323,6 +493,44 @@ const styles = StyleSheet.create({
   },
   totalIncomeValue: { fontSize: 48, fontWeight: '700', color: COLORS.white, marginBottom: 2 },
   totalIncomeUnit: { fontSize: FONTS.sizes.md, color: 'rgba(255,255,255,0.8)' },
+
+  // Insights
+  insightsCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.xxl,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  insightRow: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.lg, marginBottom: SPACING.md },
+  insightStat: { flex: 1 },
+  insightLabel: { fontSize: FONTS.sizes.xs, color: COLORS.textSecondary, marginBottom: SPACING.xs },
+  insightValue: { fontSize: FONTS.sizes.xxl, fontWeight: '700', color: COLORS.text },
+  insightValueSmall: { fontSize: FONTS.sizes.sm, color: COLORS.text, fontWeight: '600' },
+
+  shiftSummaryCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    marginBottom: SPACING.xxxl,
+  },
+  shiftSummaryRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: SPACING.xs,
+  },
+  shiftSummaryLabel: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
+  shiftSummaryValue: { fontSize: FONTS.sizes.sm, fontWeight: '600', color: COLORS.text },
+
+  // Empty state
+  emptyCard: {
+    backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACING.xxxl,
+    alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.xxl, ...SHADOWS.sm,
+  },
+  emptyTitle: { fontSize: FONTS.sizes.lg, fontWeight: '600', color: COLORS.text },
+  emptyText: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20 },
 
   // FAB
   fab: {

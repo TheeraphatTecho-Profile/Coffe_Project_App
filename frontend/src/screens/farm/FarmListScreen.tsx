@@ -19,56 +19,6 @@ type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'FarmList'>;
 };
 
-const MOCK_FARMS: Farm[] = [
-  {
-    id: '1',
-    name: 'สวนเขาหงอนเอน',
-    area: 32,
-    variety: 'Arabica',
-    tree_count: 1200,
-    soil_type: null,
-    water_source: null,
-    province: 'เลย',
-    district: null,
-    altitude: null,
-    planting_year: null,
-    notes: null,
-    created_at: {} as any,
-    user_id: '',
-  },
-  {
-    id: '2',
-    name: 'สวนภูเรือ',
-    area: 45,
-    variety: 'Arabica',
-    tree_count: 1800,
-    soil_type: null,
-    water_source: null,
-    province: 'เลย',
-    district: null,
-    altitude: null,
-    planting_year: null,
-    notes: null,
-    created_at: {} as any,
-    user_id: '',
-  },
-  {
-    id: '3',
-    name: 'สวนนาด้วง',
-    area: 28,
-    variety: 'Robusta',
-    tree_count: 950,
-    soil_type: null,
-    water_source: null,
-    province: 'เลย',
-    district: null,
-    altitude: null,
-    planting_year: null,
-    notes: null,
-    created_at: {} as any,
-    user_id: '',
-  },
-];
 
 /**
  * Farm list screen showing all user's coffee farms.
@@ -82,16 +32,16 @@ export const FarmListScreen: React.FC<Props> = ({ navigation }) => {
 
   const fetchFarms = useCallback(async () => {
     if (!user?.uid) {
-      setFarms(MOCK_FARMS);
+      setFarms([]);
       setLoading(false);
       return;
     }
     try {
       const data = await FarmService.getAll(user.uid);
-      setFarms(data.length > 0 ? data : MOCK_FARMS);
+      setFarms(data);
     } catch (err) {
       console.error('Error fetching farms:', err);
-      setFarms(MOCK_FARMS);
+      setFarms([]);
     } finally {
       setLoading(false);
     }
@@ -123,6 +73,9 @@ export const FarmListScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <Text style={styles.title}>สวนของฉัน</Text>
           <Text style={styles.subtitle}>จัดการสวนกาแฟทั้งหมดของคุณ</Text>
@@ -130,31 +83,46 @@ export const FarmListScreen: React.FC<Props> = ({ navigation }) => {
           {/* Add farm button */}
           <TouchableOpacity
             style={styles.addFarmCard}
-            onPress={() => navigation.navigate('AddFarmStep1')}
+            onPress={() => navigation.navigate('AddFarmStep1', {})}
           >
             <Ionicons name="add-circle" size={32} color={COLORS.primary} />
             <Text style={styles.addFarmText}>เพิ่มสวนใหม่</Text>
           </TouchableOpacity>
 
           {/* Farm list */}
-          {(farms.length > 0 ? farms : MOCK_FARMS).map((farm) => (
-            <TouchableOpacity 
-              key={farm.id} 
-              style={styles.farmCard}
-              onPress={() => navigation.navigate('FarmDetail', { farmId: farm.id })}
-            >
-              <View style={styles.farmIcon}>
-                <Ionicons name="leaf" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.farmContent}>
-                <Text style={styles.farmName}>{farm.name}</Text>
-                <Text style={styles.farmDetail}>
-                  {farm.area} ไร่ • {farm.variety || '-'} • {farm.tree_count || 0} ต้น
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
-            </TouchableOpacity>
-          ))}
+          {loading ? (
+            <View style={styles.loadingCard}>
+              <Ionicons name="leaf-outline" size={40} color={COLORS.textLight} />
+              <Text style={styles.loadingText}>กำลังโหลดข้อมูล...</Text>
+            </View>
+          ) : farms.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Ionicons name="leaf-outline" size={40} color={COLORS.textLight} />
+              <Text style={styles.emptyTitle}>ยังไม่มีสวนกาแฟ</Text>
+              <Text style={styles.emptyText}>
+                เริ่มต้นโดยการเพิ่มสวนแรกของคุณเพื่อจัดการการผลิต
+              </Text>
+            </View>
+          ) : (
+            farms.map((farm: Farm) => (
+              <TouchableOpacity 
+                key={farm.id} 
+                style={styles.farmCard}
+                onPress={() => navigation.navigate('FarmDetail', { farmId: farm.id })}
+              >
+                <View style={styles.farmIcon}>
+                  <Ionicons name="leaf" size={24} color={COLORS.primary} />
+                </View>
+                <View style={styles.farmContent}>
+                  <Text style={styles.farmName}>{farm.name}</Text>
+                  <Text style={styles.farmDetail}>
+                    {farm.area} ไร่ • {farm.variety || '-'} • {farm.tree_count || 0} ต้น
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -254,6 +222,39 @@ const styles = StyleSheet.create({
   },
   farmDetail: {
     fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+  },
+  // Empty state
+  emptyCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.xxxl,
+    alignItems: 'center',
+    gap: SPACING.md,
+    ...SHADOWS.sm,
+  },
+  emptyTitle: {
+    fontSize: FONTS.sizes.lg,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  emptyText: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  // Loading state
+  loadingCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.xxxl,
+    alignItems: 'center',
+    gap: SPACING.md,
+    ...SHADOWS.sm,
+  },
+  loadingText: {
+    fontSize: FONTS.sizes.md,
     color: COLORS.textSecondary,
   },
 });

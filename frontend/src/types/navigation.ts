@@ -21,12 +21,28 @@ export type MainTabParamList = {
 
 export type FarmStackParamList = {
   FarmList: undefined;
-  AddFarmStep1: undefined;
-  AddFarmStep2: undefined;
-  AddFarmStep3: undefined;
-  AddFarmStep4: undefined;
+  AddFarmStep1: { farmData?: Partial<FarmData> };
+  AddFarmStep2: { farmData: Partial<FarmData> };
+  AddFarmStep3: { farmData: Partial<FarmData> };
+  AddFarmStep4: { farmData: Partial<FarmData> };
   FarmDetail: { farmId: string };
 };
+
+export interface FarmData {
+  name: string;
+  area: number;
+  soil_type: string | null;
+  water_source: string | null;
+  water_detail?: string;
+  irrigations?: string[];
+  province: string;
+  district: string | null;
+  altitude: number | null;
+  variety: string | null;
+  tree_count: number | null;
+  planting_year: number | null;
+  notes: string | null;
+}
 
 export type HarvestStackParamList = {
   HarvestList: undefined;
