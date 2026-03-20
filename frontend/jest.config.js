@@ -25,5 +25,7 @@ module.exports = {
     '^react-native/(.*)$': '<rootDir>/__mocks__/react-native.js',
     '^@react-native/(.*)$': '<rootDir>/__mocks__/react-native.js',
     'react-native/Libraries/StyleSheet/StyleSheet': '<rootDir>/__mocks__/react-native.js',
+    '^@theme/(.*)$': '<rootDir>/src/theme/$1',
+    '^@components/(.*)$': '<rootDir>/src/components/$1',
   },
 };
