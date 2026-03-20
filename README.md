@@ -80,9 +80,19 @@
 ### การตั้งค่า LINE Login
 
 1. สร้าง LINE Channel ที่ [LINE Developers Console](https://developers.line.biz/)
-2. ใน Firebase Console → Authentication → Sign-in method → Add new provider
-3. เลือก OpenID Connect → ใส่ Provider ID: `oidc.line`
-4. ใส่ Client ID และ Client Secret จาก LINE Channel
+2. ตั้งค่า **Callback URL** ใน LINE Channel:
+   ```
+   https://coffee-project-cfcc7.firebaseapp.com/__/auth/handler
+   ```
+3. ใน Firebase Console → Authentication → Sign-in method → Add new provider
+4. เลือก **OpenID Connect** → ใส่:
+   - Provider ID: `oidc.line`
+   - Client ID: `{YOUR_LINE_CHANNEL_ID}`
+   - Client Secret: `{YOUR_LINE_CHANNEL_SECRET}`
+   - Issuer: `https://access.line.me`
+5. เปิดใช้งาน OpenID Connect ใน LINE Channel
+
+📖 **คู่มือโดยละเอียด**: [`docs/LINE_LOGIN_SETUP.md`](docs/LINE_LOGIN_SETUP.md)
 
 ### การตั้งค่า Facebook Login
 
