@@ -9,15 +9,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { FarmService, HarvestService, Harvest } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
-
-const DARK_BG = '#2A1F14';
-const DARK_SURFACE = '#3D2E1F';
+import { useTheme } from '../../theme/ThemeProvider';
+import { AnimatedButton } from '../../components/AnimatedButton';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
+import { Logo } from '../../components/Logo';
 
 export const HomeScreen: React.FC<any> = ({ navigation }) => {
   const { user } = useAuth();
+  const { colors, spacing, typography, radius, shadows } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [recentHarvests, setRecentHarvests] = useState<Harvest[]>([]);
   const [stats, setStats] = useState({
@@ -66,6 +67,8 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
   };
   const userName = user?.displayName || user?.email?.split('@')[0] || 'คุณผู้ใช้';
 
+  const styles = React.useMemo(() => createStyles(colors, spacing, typography, radius, shadows), [colors, spacing, typography, radius, shadows]);
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -73,19 +76,19 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           bounces={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.white} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textOnPrimary} />
           }
         >
           {/* ===== DARK HEADER SECTION ===== */}
           <View style={styles.darkSection}>
             {/* Header bar */}
             <View style={styles.header}>
-              <Text style={styles.headerBrand}>สวนกาแฟเลย</Text>
+              <Logo size="small" showText={false} />
               <TouchableOpacity
                 style={styles.headerAvatar}
                 onPress={() => navigation.navigate('ProfileTab')}
               >
-                <Ionicons name="person" size={18} color={COLORS.secondary} />
+                <Ionicons name="person" size={18} color={colors.secondary} />
               </TouchableOpacity>
             </View>
 
@@ -133,27 +136,25 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
             {/* Shortcuts */}
             <Text style={styles.sectionTitle}>ทางลัด</Text>
             <View style={styles.shortcutsRow}>
-              <TouchableOpacity
-                style={styles.shortcutButton}
+              <AnimatedButton
+                title="เพิ่มสวน\nใหม่"
                 onPress={() => {
                   try { navigation.navigate('FarmTab', { screen: 'AddFarmStep1', params: {} }); } catch { /* noop */ }
                 }}
-              >
-                <View style={[styles.shortcutIcon, { backgroundColor: COLORS.successLight }]}>
-                  <Ionicons name="add-circle-outline" size={22} color={COLORS.primary} />
-                </View>
-                <Text style={styles.shortcutText}>เพิ่มสวน{'\n'}ใหม่</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
+                variant="secondary"
+                size="medium"
+                icon={<Ionicons name="add-circle-outline" size={22} color={colors.primary} />}
                 style={styles.shortcutButton}
+              />
+
+              <AnimatedButton
+                title="บันทึกเก็บ\nเกี่ยว"
                 onPress={() => navigation.navigate('HarvestTab')}
-              >
-                <View style={[styles.shortcutIcon, { backgroundColor: COLORS.warningLight }]}>
-                  <Ionicons name="basket-outline" size={22} color={COLORS.secondary} />
-                </View>
-                <Text style={styles.shortcutText}>บันทึกเก็บ{'\n'}เกี่ยว</Text>
-              </TouchableOpacity>
+                variant="outline"
+                size="medium"
+                icon={<Ionicons name="basket-outline" size={22} color={colors.secondary} />}
+                style={styles.shortcutButton}
+              />
             </View>
 
             {/* Recent harvests from real data */}
@@ -175,20 +176,18 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
 
             {recentHarvests.length === 0 ? (
               <View style={styles.emptyCard}>
-                <Ionicons name="leaf-outline" size={40} color={COLORS.textLight} />
+                <Ionicons name="leaf-outline" size={40} color={colors.textLight} />
                 <Text style={styles.emptyTitle}>ยังไม่มีข้อมูล</Text>
                 <Text style={styles.emptyText}>
                   เริ่มต้นโดยการเพิ่มสวนกาแฟและบันทึกผลผลิต
                 </Text>
-                <TouchableOpacity
-                  style={styles.emptyButton}
+                <AnimatedButton
+                  title="เพิ่มสวนแรก"
                   onPress={() => {
                     try { navigation.navigate('FarmTab', { screen: 'AddFarmStep1', params: {} }); } catch { /* noop */ }
                   }}
-                >
-                  <Ionicons name="add" size={18} color={COLORS.white} />
-                  <Text style={styles.emptyButtonText}>เพิ่มสวนแรก</Text>
-                </TouchableOpacity>
+                  icon={<Ionicons name="add" size={18} color={colors.textOnPrimary} />}
+                />
               </View>
             ) : (
               recentHarvests.map((h, idx) => {
@@ -225,110 +224,96 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safeArea: { flex: 1, backgroundColor: DARK_BG },
+const createStyles = (colors: any, spacing: any, typography: any, radius: any, shadows: any) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    safeArea: { flex: 1, backgroundColor: colors.coffeeBean },
 
-  // Dark header section
-  darkSection: { backgroundColor: DARK_BG, paddingBottom: SPACING.xxl },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md,
-  },
-  headerBrand: { fontSize: FONTS.sizes.lg, fontWeight: '600', color: COLORS.white },
-  headerAvatar: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.secondary + '30',
-    alignItems: 'center', justifyContent: 'center',
-  },
+    // Dark header section
+    darkSection: { backgroundColor: colors.coffeeBean, paddingBottom: spacing.xxl },
+    header: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
+    },
+    headerAvatar: {
+      width: 36, height: 36, borderRadius: 18, backgroundColor: colors.secondary + '30',
+      alignItems: 'center', justifyContent: 'center',
+    },
 
-  // Welcome
-  welcomeSection: { paddingHorizontal: SPACING.xl, marginBottom: SPACING.xxl },
-  welcomeLabel: { fontSize: FONTS.sizes.sm, color: 'rgba(255,255,255,0.5)', marginBottom: SPACING.xs },
-  welcomeName: { fontSize: FONTS.sizes.xxl, fontWeight: '700', color: COLORS.white, marginBottom: SPACING.xs },
-  welcomeSub: { fontSize: FONTS.sizes.sm, color: 'rgba(255,255,255,0.5)' },
+    // Welcome
+    welcomeSection: { paddingHorizontal: spacing.xl, marginBottom: spacing.xxl },
+    welcomeLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)', marginBottom: spacing.xs },
+    welcomeName: { fontSize: typography.sizes.xxl, fontWeight: '700', color: colors.textOnPrimary, marginBottom: spacing.xs },
+    welcomeSub: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)' },
 
-  // Revenue card
-  revenueCard: {
-    marginHorizontal: SPACING.xl, backgroundColor: DARK_SURFACE,
-    borderRadius: RADIUS.xl, padding: SPACING.xxl, marginBottom: SPACING.lg,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-  },
-  revenueLabel: { fontSize: FONTS.sizes.sm, color: 'rgba(255,255,255,0.5)', marginBottom: SPACING.sm },
-  revenueValue: { fontSize: 38, fontWeight: '700', color: COLORS.white },
-  emptyHint: { fontSize: FONTS.sizes.sm, color: 'rgba(255,255,255,0.35)', marginTop: SPACING.sm },
+    // Revenue card
+    revenueCard: {
+      marginHorizontal: spacing.xl, backgroundColor: colors.surfaceDark,
+      borderRadius: radius.xl, padding: spacing.xxl, marginBottom: spacing.lg,
+      borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    },
+    revenueLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)', marginBottom: spacing.sm },
+    revenueValue: { fontSize: 38, fontWeight: '700', color: colors.textOnPrimary },
+    emptyHint: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.35)', marginTop: spacing.sm },
 
-  // Stats
-  statsRow: { flexDirection: 'row', gap: SPACING.md, paddingHorizontal: SPACING.xl },
-  statCard: {
-    flex: 1, backgroundColor: DARK_SURFACE, borderRadius: RADIUS.lg,
-    padding: SPACING.lg, gap: SPACING.sm, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-  },
-  statLabel: { fontSize: FONTS.sizes.sm, color: 'rgba(255,255,255,0.5)' },
-  statValueRow: { flexDirection: 'row', alignItems: 'baseline' },
-  statValue: { fontSize: FONTS.sizes.xxl, fontWeight: '700', color: COLORS.white },
-  statUnit: { fontSize: FONTS.sizes.md, color: 'rgba(255,255,255,0.5)' },
+    // Stats
+    statsRow: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.xl },
+    statCard: {
+      flex: 1, backgroundColor: colors.surfaceDark, borderRadius: radius.lg,
+      padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    },
+    statLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)' },
+    statValueRow: { flexDirection: 'row', alignItems: 'baseline' },
+    statValue: { fontSize: typography.sizes.xxl, fontWeight: '700', color: colors.textOnPrimary },
+    statUnit: { fontSize: typography.sizes.md, color: 'rgba(255,255,255,0.5)' },
 
-  // Light section
-  lightSection: {
-    backgroundColor: COLORS.background, borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl, paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.xxl, paddingBottom: SPACING.xxxxl,
-  },
-  sectionTitle: { fontSize: FONTS.sizes.lg, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.md },
+    // Light section
+    lightSection: {
+      backgroundColor: colors.background, borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xxl, paddingBottom: spacing.xxxl,
+    },
+    sectionTitle: { fontSize: typography.sizes.lg, fontWeight: '700', color: colors.text, marginBottom: spacing.md },
 
-  // Shortcuts
-  shortcutsRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.xxl },
-  shortcutButton: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.md,
-    backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACING.lg,
-    ...SHADOWS.sm,
-  },
-  shortcutIcon: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  shortcutText: { fontSize: FONTS.sizes.sm, fontWeight: '600', color: COLORS.text, lineHeight: 18 },
+    // Shortcuts
+    shortcutsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.xxl },
+    shortcutButton: {
+      flex: 1,
+    },
 
-  // Activities
-  activityHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    marginBottom: SPACING.lg,
-  },
-  activitySubtitle: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginTop: 2 },
-  seeAll: { fontSize: FONTS.sizes.sm, fontWeight: '600', color: COLORS.secondary },
+    // Activities
+    activityHeader: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+      marginBottom: spacing.lg,
+    },
+    activitySubtitle: { fontSize: typography.sizes.sm, color: colors.textSecondary, marginTop: 2 },
+    seeAll: { fontSize: typography.sizes.sm, fontWeight: '600', color: colors.secondary },
 
-  activityCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.md, gap: SPACING.md,
-    ...SHADOWS.sm,
-  },
-  activityDateWrap: {
-    alignItems: 'center', backgroundColor: COLORS.surfaceWarm,
-    borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    minWidth: 48,
-  },
-  activityContent: { flex: 1 },
-  activityTitle: { fontSize: FONTS.sizes.md, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
-  activityDetail: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
-  activityDate: { fontSize: FONTS.sizes.xl, fontWeight: '700', color: COLORS.text },
-  activityMonth: { fontSize: FONTS.sizes.xs, color: COLORS.textLight },
-  shiftBadge: {
-    backgroundColor: COLORS.surfaceWarm, paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs, borderRadius: RADIUS.sm,
-  },
-  shiftText: { fontSize: FONTS.sizes.xs, fontWeight: '600', color: COLORS.textSecondary },
+    activityCard: {
+      flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
+      borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, gap: spacing.md,
+      ...shadows.sm,
+    },
+    activityDateWrap: {
+      alignItems: 'center', backgroundColor: colors.surfaceWarm,
+      borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      minWidth: 48,
+    },
+    activityContent: { flex: 1 },
+    activityTitle: { fontSize: typography.sizes.md, fontWeight: '600', color: colors.text, marginBottom: 2 },
+    activityDetail: { fontSize: typography.sizes.sm, color: colors.textSecondary },
+    activityDate: { fontSize: typography.sizes.xl, fontWeight: '700', color: colors.text },
+    activityMonth: { fontSize: typography.sizes.xs, color: colors.textLight },
+    shiftBadge: {
+      backgroundColor: colors.surfaceWarm, paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs, borderRadius: radius.sm,
+    },
+    shiftText: { fontSize: typography.sizes.xs, fontWeight: '600', color: colors.textSecondary },
 
-  // Empty state
-  emptyCard: {
-    backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: SPACING.xxxl,
-    alignItems: 'center', gap: SPACING.md, ...SHADOWS.sm,
-  },
-  emptyTitle: { fontSize: FONTS.sizes.lg, fontWeight: '600', color: COLORS.text },
-  emptyText: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20 },
-  emptyButton: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.primary, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md, marginTop: SPACING.sm,
-  },
-  emptyButtonText: { fontSize: FONTS.sizes.md, fontWeight: '600', color: COLORS.white },
-});
+    // Empty state
+    emptyCard: {
+      backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xxxl,
+      alignItems: 'center', gap: spacing.md, ...shadows.sm,
+    },
+    emptyTitle: { fontSize: typography.sizes.lg, fontWeight: '600', color: colors.text },
+    emptyText: { fontSize: typography.sizes.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  });
