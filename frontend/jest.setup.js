@@ -1,8 +1,40 @@
 // Global mocks for Jest test environment
 
-// Mock @testing-library/react-native (avoids parsing react-native source)
+// Mock react-dom/server for renderToString
+jest.mock('react-dom/server', () => ({
+  renderToString: jest.fn(() => '<div></div>'),
+}));
+
+// Ensure react-native resolves to the local mock (moduleNameMapper sometimes misses edge cases)
+jest.mock('react-native', () => require('./__mocks__/react-native.js'));
+jest.mock('react-native/Libraries/StyleSheet/StyleSheet', () => {
+  const rn = require('./__mocks__/react-native.js');
+  return rn.StyleSheet;
+});
+
+// Mock StyleSheet globally to ensure it's available before imports
+global.StyleSheet = {
+  create: jest.fn((styles) => styles),
+  flatten: jest.fn((style) => style || {}),
+  absoluteFillObject: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  hairlineWidth: 1,
+  compose: jest.fn((style1, style2) => ({ ...style1, ...style2 })),
+};
+
+// Mock Dimensions globally
+jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
+  get: jest.fn(() => ({
+    width: 375,
+    height: 667,
+  })),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+}));
+
+// Mock @testing-library/react-native with proper mocks
 jest.mock('@testing-library/react-native', () => {
   const React = require('react');
+  
   return {
     render: (component) => ({
       getByText: jest.fn(),
@@ -11,33 +43,43 @@ jest.mock('@testing-library/react-native', () => {
       queryByTestId: jest.fn(),
       findByText: jest.fn(),
       findByTestId: jest.fn(),
-      toJSON: jest.fn(),
+      toJSON: jest.fn(() => ({ type: 'View', props: {} })),
       unmount: jest.fn(),
+      rerender: jest.fn(),
+      container: { childNodes: [] },
     }),
-    renderHook: (hookFn, options) => {
+    renderHook: (hookFn, options = {}) => {
       let result = { current: undefined };
-      const wrapper = options?.wrapper || (({ children }) => children);
-      const TestComponent = () => {
-        result.current = hookFn();
-        return null;
-      };
+      const wrapper = options.wrapper || (({ children }) => children);
+      
       // Simple synchronous render for hook testing
       try {
-        const element = React.createElement(wrapper, { children: React.createElement(TestComponent) });
-        // We rely on React to call the component synchronously
-        require('react-dom/server').renderToString(element);
+        const TestComponent = () => {
+          result.current = hookFn();
+          return null;
+        };
+        React.createElement(wrapper, { children: React.createElement(TestComponent) });
       } catch (e) {
         // Ignore render errors in test environment
       }
-      return { result };
+      
+      return { 
+        result,
+        rerender: jest.fn(),
+        unmount: jest.fn(),
+      };
     },
-    act: async (fn) => { await fn(); },
+    act: async (fn) => { 
+      await fn(); 
+    },
     fireEvent: {
       press: jest.fn(),
       changeText: jest.fn(),
       scroll: jest.fn(),
     },
-    waitFor: async (fn) => fn(),
+    waitFor: async (fn) => {
+      return await fn();
+    },
     screen: {
       getByText: jest.fn(),
       getByTestId: jest.fn(),
@@ -219,14 +261,28 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-// Mock @notifee/react-native
-jest.mock('@notifee/react-native', () => ({
-  createChannel: jest.fn(),
-  displayNotification: jest.fn(),
-  cancelAllNotifications: jest.fn(),
-  requestPermission: jest.fn(),
-  AuthorizationStatus: { AUTHORIZED: 1 },
-}));
+// Mock @notifee/react-native with all APIs used by NotificationService
+const mockNotifee = {
+  requestPermission: jest.fn().mockResolvedValue({ authorizationStatus: 1 }),
+  getNotificationSettings: jest.fn().mockResolvedValue({ authorizationStatus: 1 }),
+  createChannel: jest.fn().mockResolvedValue(undefined),
+  displayNotification: jest.fn().mockResolvedValue(undefined),
+  createTriggerNotification: jest.fn().mockResolvedValue(undefined),
+  cancelNotification: jest.fn().mockResolvedValue(undefined),
+  cancelAllNotifications: jest.fn().mockResolvedValue(undefined),
+  getTriggerNotificationIds: jest.fn().mockResolvedValue([]),
+  onForegroundEvent: jest.fn().mockImplementation(() => jest.fn()),
+  onBackgroundEvent: jest.fn().mockImplementation((handler) => handler),
+  AndroidImportance: { HIGH: 4, DEFAULT: 3 },
+  AndroidVisibility: { PUBLIC: 1 },
+  TriggerType: { TIMESTAMP: 0 },
+  AndroidStyle: { BIGTEXT: 1 },
+  EventType: { PRESS: 1 },
+};
+
+jest.mock('@notifee/react-native', () => mockNotifee);
+
+global.__NOTIFEE__ = mockNotifee;
 
 // Mock react-native-chart-kit
 jest.mock('react-native-chart-kit', () => {
