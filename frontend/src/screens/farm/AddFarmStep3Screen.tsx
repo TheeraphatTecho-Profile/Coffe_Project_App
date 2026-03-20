@@ -9,13 +9,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { FarmStackParamList } from '../../types/navigation';
+import { FarmStackParamList, FarmData } from '../../types/navigation';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 
 type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'AddFarmStep3'>;
+  route: { params: { farmData: Partial<FarmData> } };
 };
 
 type Altitude = 'low' | 'medium' | 'high' | null;
@@ -24,11 +25,21 @@ type Altitude = 'low' | 'medium' | 'high' | null;
  * Add Farm Step 3 - Location and altitude information.
  * Not shown in mockup but implied by 4-step flow.
  */
-export const AddFarmStep3Screen: React.FC<Props> = ({ navigation }) => {
+export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
   const [altitude, setAltitude] = useState<Altitude>(null);
   const [province, setProvince] = useState('เลย');
   const [district, setDistrict] = useState('');
   const [subDistrict, setSubDistrict] = useState('');
+
+  const handleNext = () => {
+    const farmData: Partial<FarmData> = {
+      ...route.params.farmData,
+      province,
+      district: district.trim() || null,
+      altitude: altitude ? (altitude === 'low' ? 300 : altitude === 'medium' ? 600 : 900) : null,
+    };
+    navigation.navigate('AddFarmStep4', { farmData });
+  };
 
   return (
     <View style={styles.container}>
@@ -137,7 +148,7 @@ export const AddFarmStep3Screen: React.FC<Props> = ({ navigation }) => {
           />
           <Button
             title="ดำเนินการต่อ >"
-            onPress={() => navigation.navigate('AddFarmStep4')}
+            onPress={handleNext}
             size="md"
             fullWidth={false}
             style={styles.nextButton}

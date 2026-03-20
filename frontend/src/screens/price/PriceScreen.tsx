@@ -5,60 +5,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { FarmService, HarvestService } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
-import { AnalyticsChart } from '../../components/AnalyticsChart';
-
-const MONTHLY_DATA = [
-  { month: 'ม.ค.', value: 0.3 },
-  { month: 'ก.พ.', value: 0.4 },
-  { month: 'มี.ค.', value: 0.5 },
-  { month: 'เม.ย.', value: 0.35 },
-  { month: 'พ.ค.', value: 0.45 },
-  { month: 'มิ.ย.', value: 0.6 },
-  { month: 'ก.ค.', value: 0.55 },
-  { month: 'ส.ค.', value: 0.8 },
-  { month: 'ก.ย.', value: 1.0 },
-  { month: 'ต.ค.', value: 0.7 },
-  { month: 'พ.ย.', value: 0.5 },
-  { month: 'ธ.ค.', value: 0.3 },
-];
-
-const FARM_GROUPS = [
-  { name: 'ภูเรือ', yield: 65300, income: 0, quality: 86.5 },
-  { name: 'นาแห้ว', yield: 22800, income: 0, quality: 83.2 },
-  { name: 'ด่านซ้าย', yield: 51400, income: 0, quality: 81.5 },
-];
-
-const QUALITY_SCORE = 84.2;
-const AVG_WEIGHT = 42.8;
-const OVERALL_SCORE = 94;
-const TOTAL_YIELD = 1240;
-const YIELD_GROWTH = 12;
 
 export const PriceScreen: React.FC = () => {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [farmStats, setFarmStats] = useState<any[]>([]);
   const [harvestSummary, setHarvestSummary] = useState({ total_weight: 0, total_income: 0 });
+  const [monthlyData, setMonthlyData] = useState<{ month: string; value: number }[]>([]);
 
   const fetchData = useCallback(async () => {
     if (!user?.uid) return;
     try {
-      const [farms, harvestSummaryData] = await Promise.all([
+      const [farms, harvestSummaryData, allHarvests] = await Promise.all([
         FarmService.getAll(user.uid),
         HarvestService.getSummary(user.uid),
+        HarvestService.getAll(user.uid),
       ]);
 
       setFarmStats(farms.map((f: any) => ({
-        name: f.name,
-        yield: f.tree_count || 0,
-        income: 0,
-        quality: Math.random() * 20 + 80,
+        name: f.name || 'สวน',
+        yield: f.area_rai || 0,
+        treeCount: f.tree_count || 0,
       })));
 
       setHarvestSummary({
         total_weight: harvestSummaryData.totalWeight,
         total_income: harvestSummaryData.totalIncome,
       });
+
+      // Compute monthly production from real harvest data
+      const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      const monthTotals = new Array(12).fill(0);
+      allHarvests.forEach((h: any) => {
+        if (h.harvest_date) {
+          const d = new Date(h.harvest_date);
+          monthTotals[d.getMonth()] += h.weight_kg || 0;
+        }
+      });
+      setMonthlyData(monthNames.map((m, i) => ({ month: m, value: monthTotals[i] })));
     } catch (err) {
       console.error('Error fetching price data:', err);
     }
@@ -77,27 +61,27 @@ export const PriceScreen: React.FC = () => {
   const formatNumber = (n: number): string => n.toLocaleString('th-TH');
 
   /**
-   * Render a simple bar chart using View heights.
+   * Render a simple bar chart using View heights from real monthly data.
    */
   const renderBarChart = () => {
-    const maxVal = Math.max(...MONTHLY_DATA.map((d) => d.value));
+    const maxVal = Math.max(...monthlyData.map((d: { month: string; value: number }) => d.value), 1);
     const BAR_MAX_HEIGHT = 120;
 
     return (
       <View style={styles.chartContainer}>
         <View style={styles.chartBarsRow}>
-          {MONTHLY_DATA.map((d, i) => {
-            const height = (d.value / maxVal) * BAR_MAX_HEIGHT;
-            const isHighlight = i === 8; // September peak
+          {monthlyData.map((d: { month: string; value: number }, i: number) => {
+            const height = maxVal > 0 ? (d.value / maxVal) * BAR_MAX_HEIGHT : 4;
+            const isMax = d.value === maxVal && d.value > 0;
             return (
               <View key={d.month} style={styles.chartBarCol}>
                 <View
                   style={[
                     styles.chartBar,
                     {
-                      height,
-                      backgroundColor: isHighlight ? COLORS.text : COLORS.secondary,
-                      opacity: isHighlight ? 1 : 0.6,
+                      height: Math.max(height, 4),
+                      backgroundColor: isMax ? COLORS.text : COLORS.secondary,
+                      opacity: isMax ? 1 : 0.6,
                     },
                   ]}
                 />
@@ -106,33 +90,14 @@ export const PriceScreen: React.FC = () => {
             );
           })}
         </View>
-        <View style={styles.chartLegend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.text }]} />
-            <Text style={styles.legendText}>ปี 2567</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.secondary, opacity: 0.6 }]} />
-            <Text style={styles.legendText}>ปี 2566</Text>
-          </View>
-        </View>
       </View>
     );
   };
 
-  /**
-   * Render a circular gauge for overall score.
-   */
-  const renderGauge = () => (
-    <View style={styles.gaugeContainer}>
-      <View style={styles.gaugeOuter}>
-        <View style={styles.gaugeInner}>
-          <Text style={styles.gaugeValue}>{OVERALL_SCORE}%</Text>
-          <Text style={styles.gaugeLabel}>คะแนนรวม</Text>
-        </View>
-      </View>
-    </View>
-  );
+  // Compute average income per kg from real data
+  const avgPricePerKg = harvestSummary.total_weight > 0
+    ? (harvestSummary.total_income / harvestSummary.total_weight).toFixed(1)
+    : '0';
 
   return (
     <View style={styles.container}>
@@ -145,85 +110,87 @@ export const PriceScreen: React.FC = () => {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {/* Title */}
-          <Text style={styles.title}>รายงานบทวิเคราะห์{'\n'}การผลิตและคุณภาพ</Text>
+          <Text style={styles.title}>รายงานวิเคราะห์{'\n'}การผลิตและรายได้</Text>
           <Text style={styles.subtitle}>
-            สรุปภาพรวมการผลิตของปี พ.ศ. 2567 พร้อมข้อมูลคุณภาพกาแฟ รายได้เปรียบเทียบและรายงานที่ช่วยตัดสินใจเกี่ยวกับอนาคต
+            สรุปภาพรวมผลผลิตและรายได้จากฐานข้อมูลจริงของคุณ
           </Text>
 
-          {/* Total yield stat */}
+          {/* Total yield stat — real data */}
           <View style={styles.yieldStatCard}>
             <Text style={styles.yieldStatLabel}>ผลผลิตรวมสะสม</Text>
             <View style={styles.yieldStatRow}>
-              <Text style={styles.yieldStatValue}>{formatNumber(TOTAL_YIELD)}</Text>
+              <Text style={styles.yieldStatValue}>{formatNumber(harvestSummary.total_weight)}</Text>
               <Text style={styles.yieldStatUnit}> กก.</Text>
             </View>
-            <View style={styles.growthBadge}>
-              <Ionicons name="trending-up" size={14} color={COLORS.success} />
-              <Text style={styles.growthText}> +{YIELD_GROWTH}% จากปีที่แล้ว</Text>
-            </View>
+            {harvestSummary.total_weight === 0 && (
+              <Text style={styles.emptyHint}>ยังไม่มีข้อมูลผลผลิต</Text>
+            )}
           </View>
 
-          {/* Quality score card */}
+          {/* Total income card */}
           <View style={styles.qualityCard}>
             <View style={styles.qualityHeader}>
-              <Text style={styles.qualityTitle}>Quality Score</Text>
+              <Text style={styles.qualityTitle}>รายได้รวมสะสม</Text>
             </View>
             <View style={styles.qualityRow}>
-              <Text style={styles.qualityValue}>{QUALITY_SCORE}</Text>
-              <Text style={styles.qualityMax}> /100</Text>
-            </View>
-            {/* Quality bar */}
-            <View style={styles.qualityBarBg}>
-              <View style={[styles.qualityBarFill, { width: `${QUALITY_SCORE}%` }]} />
+              <Text style={styles.qualityValue}>{formatNumber(harvestSummary.total_income)}</Text>
+              <Text style={styles.qualityMax}> บาท</Text>
             </View>
           </View>
 
-          {/* Average weight */}
+          {/* Average price per kg */}
           <View style={styles.avgWeightCard}>
-            <Text style={styles.avgWeightValue}>{AVG_WEIGHT}</Text>
-            <Text style={styles.avgWeightUnit}> กรัม/ผล</Text>
-            <Text style={styles.avgWeightNote}>เกรด 82 คะแนน</Text>
+            <Text style={styles.avgWeightValue}>{avgPricePerKg}</Text>
+            <Text style={styles.avgWeightUnit}> บาท/กก.</Text>
+            <Text style={styles.avgWeightNote}>ราคาเฉลี่ยต่อกิโลกรัม</Text>
           </View>
 
-          {/* Monthly bar chart */}
-          <Text style={styles.sectionTitle}>แนวโน้มการผลิตรายเดือน (Cherry)</Text>
-          {renderBarChart()}
+          {/* Monthly bar chart — real data */}
+          <Text style={styles.sectionTitle}>ผลผลิตรายเดือน (กก.)</Text>
+          {monthlyData.length > 0 ? renderBarChart() : (
+            <Text style={styles.emptyHint}>ยังไม่มีข้อมูลรายเดือน</Text>
+          )}
 
-          {/* Farm group efficiency table */}
-          <Text style={styles.sectionTitle}>ประสิทธิภาพรายกลุ่มสวน</Text>
-          <View style={styles.tableCard}>
-            {/* Table header */}
-            <View style={styles.tableHeaderRow}>
-              <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>กลุ่ม/พื้นที่</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1 }]}>ผลผลิต(กก.)</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1 }]}>คุณภาพ(คะแนน)</Text>
+          {/* Farm list table — real data */}
+          <Text style={styles.sectionTitle}>ข้อมูลสวนของคุณ</Text>
+          {farmStats.length === 0 ? (
+            <View style={styles.insightsCard}>
+              <Text style={styles.insightsText}>ยังไม่มีข้อมูลสวน — เพิ่มสวนแรกของคุณเพื่อเริ่มต้น</Text>
             </View>
-            {FARM_GROUPS.map((g, i) => (
-              <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.tableRowAlt]}>
-                <Text style={[styles.tableCell, { flex: 1.2, fontWeight: '600' }]}>กลุ่ม{'\n'}{g.name}</Text>
-                <Text style={[styles.tableCell, { flex: 1 }]}>{formatNumber(g.yield)}</Text>
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={styles.tableCell}>{g.quality}</Text>
-                  <Text style={styles.starIcon}> ★</Text>
-                </View>
+          ) : (
+            <View style={styles.tableCard}>
+              {/* Table header */}
+              <View style={styles.tableHeaderRow}>
+                <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>ชื่อสวน</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>พื้นที่ (ไร่)</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>จำนวนต้น</Text>
               </View>
-            ))}
-          </View>
+              {farmStats.map((g: any, i: number) => (
+                <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.tableRowAlt]}>
+                  <Text style={[styles.tableCell, { flex: 1.5, fontWeight: '600' }]}>{g.name}</Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>{formatNumber(g.yield)}</Text>
+                  <Text style={[styles.tableCell, { flex: 1 }]}>{formatNumber(g.treeCount)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
-          {/* AI Insights */}
+          {/* Summary insights */}
           <View style={styles.insightsCard}>
-            <Text style={styles.insightsTitle}>สรุปภาพรวมเชิงลึก</Text>
+            <Text style={styles.insightsTitle}>สรุปภาพรวม</Text>
             <Text style={styles.insightsText}>
-              ในปี 2567 ผลผลิตรวม 1,240 กก. เพิ่มขึ้น 12% จากปีก่อน สวนกลุ่มภูเรือมีผลผลิตสูงสุดด้วยคะแนนคุณภาพ 86.5 แนะนำให้เพิ่มการดูแลสวนกลุ่มด่านซ้ายเพื่อยกระดับคุณภาพ
+              {harvestSummary.total_weight > 0
+                ? `ผลผลิตรวม ${formatNumber(harvestSummary.total_weight)} กก. รายได้รวม ${formatNumber(harvestSummary.total_income)} บาท จำนวนสวนทั้งหมด ${farmStats.length} แห่ง ราคาเฉลี่ย ${avgPricePerKg} บาท/กก.`
+                : 'เริ่มบันทึกผลผลิตเพื่อดูรายงานวิเคราะห์ที่ครบถ้วน'}
             </Text>
-          </View>
-
-          {/* Overall score gauge */}
-          <View style={styles.overallCard}>
-            <Text style={styles.overallTitle}>คะแนนโดยรวมคุณภาพเมล็ดปี 2567</Text>
-            {renderGauge()}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -319,18 +286,6 @@ const styles = StyleSheet.create({
   insightsTitle: { fontSize: FONTS.sizes.lg, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.md },
   insightsText: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, lineHeight: 22 },
 
-  // Overall gauge
-  overallCard: {
-    backgroundColor: COLORS.white, borderRadius: RADIUS.xl, padding: SPACING.xxl,
-    alignItems: 'center', marginBottom: SPACING.xxl, ...SHADOWS.sm,
-  },
-  overallTitle: { fontSize: FONTS.sizes.md, fontWeight: '600', color: COLORS.text, marginBottom: SPACING.xl, textAlign: 'center' },
-  gaugeContainer: { alignItems: 'center' },
-  gaugeOuter: {
-    width: 160, height: 160, borderRadius: 80,
-    borderWidth: 10, borderColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
-  },
-  gaugeInner: { alignItems: 'center' },
-  gaugeValue: { fontSize: 36, fontWeight: '700', color: COLORS.primary },
-  gaugeLabel: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
+  // Empty hint
+  emptyHint: { fontSize: FONTS.sizes.sm, color: COLORS.textLight, marginTop: SPACING.sm },
 });

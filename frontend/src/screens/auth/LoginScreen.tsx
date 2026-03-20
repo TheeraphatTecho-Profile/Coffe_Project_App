@@ -15,8 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthStackParamList } from '../../types/navigation';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { COLORS, FONTS, SPACING } from '../../constants';
+import { SocialAuthButtons } from '../../components/SocialAuthButtons';
+import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 import { useAuth } from '../../context/AuthContext';
+import { signInWithLINE } from '../../lib/lineAuth';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -24,12 +26,13 @@ type Props = {
 
 /**
  * Login screen with email/password form.
- * Includes validation, forgot password link, and social login options.
+ * Includes validation, forgot password link, remember me, and social login options.
  */
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
 
@@ -92,6 +95,20 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleLineLogin = async () => {
+    try {
+      setLoading(true);
+      const { error } = await signInWithLINE();
+      if (error) {
+        Alert.alert('เข้าสู่ระบบด้วย LINE ไม่สำเร็จ', error.message);
+      }
+    } catch (err) {
+      console.error('LINE login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -104,16 +121,19 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Back button */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={22} color={COLORS.text} />
+            </TouchableOpacity>
+
             {/* Header */}
             <View style={styles.header}>
-              <View style={styles.headerRow}>
-                <Ionicons name="cafe" size={24} color={COLORS.text} />
-                <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
-              </View>
-
               <Text style={styles.title}>เข้าสู่ระบบ</Text>
               <Text style={styles.subtitle}>
-                ยินดีต้อนรับกลับสู่ระบบจัดการไร่กาแฟของคุณ
+                ยินดีต้อนรับกลับสู่ระบบจัดการสวนกาแฟเลย
               </Text>
             </View>
 
@@ -140,10 +160,28 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 value={password}
                 onChangeText={setPassword}
                 isPassword
-                rightLabel="ลืมรหัสผ่าน?"
-                onRightLabelPress={() => navigation.navigate('ForgotPassword')}
                 autoComplete="password"
               />
+
+              {/* Remember me + Forgot password row */}
+              <View style={styles.optionsRow}>
+                <TouchableOpacity
+                  style={styles.rememberRow}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                    {rememberMe && (
+                      <Ionicons name="checkmark" size={13} color={COLORS.white} />
+                    )}
+                  </View>
+                  <Text style={styles.rememberText}>จดจำรหัสผ่าน</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                  <Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text>
+                </TouchableOpacity>
+              </View>
 
               <Button
                 title="เข้าสู่ระบบ"
@@ -154,49 +192,20 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               />
             </View>
 
-            {/* Social login divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.divider} />
-              <Text style={styles.dividerText}>หรือเข้าใช้งานด้วย</Text>
-              <View style={styles.divider} />
-            </View>
-
-            {/* Social buttons */}
-            <View style={styles.socialRow}>
-              <TouchableOpacity 
-                style={styles.socialButton}
-                onPress={handleGoogleLogin}
-                disabled={loading}
-              >
-                <Ionicons name="logo-google" size={20} color={COLORS.text} />
-                <Text style={styles.socialLabel}>GOOGLE</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.socialButtonFb]}
-                onPress={handleFacebookLogin}
-                disabled={loading}
-              >
-                <Ionicons name="logo-facebook" size={22} color={COLORS.secondary} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.socialButtonLine]}
-                disabled={loading}
-              >
-                <Text style={styles.socialLabelLine}>LINE</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Social login buttons */}
+            <SocialAuthButtons
+              onGooglePress={handleGoogleLogin}
+              onFacebookPress={handleFacebookLogin}
+              onLinePress={handleLineLogin}
+              loading={loading}
+            />
 
             {/* Register link */}
             <View style={styles.registerRow}>
               <Text style={styles.registerText}>ยังไม่มีบัญชีผู้ใช้งาน? </Text>
-              <Text
-                style={styles.registerLink}
-                onPress={() => navigation.navigate('Register')}
-              >
-                สร้างบัญชีใหม่
-              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.registerLink}>สร้างบัญชีใหม่</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -219,24 +228,25 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.xxl,
-    paddingTop: SPACING.xxxl,
+    paddingTop: SPACING.lg,
     paddingBottom: SPACING.xxxl,
   },
-  header: {
-    marginBottom: SPACING.xxxl,
-  },
-  headerRow: {
-    flexDirection: 'row',
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.xl,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  header: {
     marginBottom: SPACING.xxl,
   },
-  headerBrand: {
-    fontSize: FONTS.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
   title: {
-    fontSize: FONTS.sizes.xxxl,
+    fontSize: FONTS.sizes.xxl,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: SPACING.sm,
@@ -249,62 +259,49 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: SPACING.xxl,
   },
-  loginButton: {
-    marginTop: SPACING.md,
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.lg,
   },
-  dividerContainer: {
+  rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    gap: SPACING.sm,
   },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-  dividerText: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.textLight,
-    paddingHorizontal: SPACING.md,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginBottom: SPACING.xxl,
-  },
-  socialButton: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    borderRadius: 12,
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
     borderWidth: 1.5,
     borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.white,
   },
-  socialButtonFb: {
-    // Same style, different icon
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
-  socialButtonLine: {
-    backgroundColor: '#06C755',
-    borderColor: '#06C755',
-  },
-  socialLabel: {
+  rememberText: {
     fontSize: FONTS.sizes.sm,
-    fontWeight: '700',
-    color: COLORS.text,
-    letterSpacing: 1,
+    color: COLORS.textSecondary,
   },
-  socialLabelLine: {
+  forgotText: {
     fontSize: FONTS.sizes.sm,
-    fontWeight: '700',
-    color: COLORS.white,
-    letterSpacing: 1,
+    fontWeight: '600',
+    color: COLORS.secondary,
+  },
+  loginButton: {
+    marginTop: SPACING.xs,
   },
   registerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: SPACING.xxl,
   },
   registerText: {
     fontSize: FONTS.sizes.md,
@@ -314,6 +311,5 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.md,
     fontWeight: '600',
     color: COLORS.secondary,
-    textDecorationLine: 'underline',
   },
 });

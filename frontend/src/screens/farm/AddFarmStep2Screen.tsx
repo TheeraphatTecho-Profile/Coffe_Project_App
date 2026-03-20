@@ -9,13 +9,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { FarmStackParamList } from '../../types/navigation';
+import { FarmStackParamList, FarmData } from '../../types/navigation';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 
 type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'AddFarmStep2'>;
+  route: { params: { farmData: Partial<FarmData> } };
 };
 
 type WaterSource = 'river' | 'well' | 'rain' | 'reservoir';
@@ -31,9 +32,19 @@ interface IrrigationMethod {
 /**
  * Add Farm Step 2 - Water source and irrigation methods.
  */
-export const AddFarmStep2Screen: React.FC<Props> = ({ navigation }) => {
+export const AddFarmStep2Screen: React.FC<Props> = ({ navigation, route }) => {
   const [waterSource, setWaterSource] = useState<WaterSource>('river');
   const [waterDetail, setWaterDetail] = useState('');
+
+  const handleNext = () => {
+    const farmData: Partial<FarmData> = {
+      ...route.params.farmData,
+      water_source: waterSource,
+      water_detail: waterDetail.trim(),
+      irrigations: irrigations.filter(i => i.enabled).map(i => i.id),
+    };
+    navigation.navigate('AddFarmStep3', { farmData });
+  };
   const [irrigations, setIrrigations] = useState<IrrigationMethod[]>([
     {
       id: 'drip',
@@ -198,7 +209,7 @@ export const AddFarmStep2Screen: React.FC<Props> = ({ navigation }) => {
           />
           <Button
             title="ดำเนินการต่อ >"
-            onPress={() => navigation.navigate('AddFarmStep3')}
+            onPress={handleNext}
             size="md"
             fullWidth={false}
             style={styles.nextButton}

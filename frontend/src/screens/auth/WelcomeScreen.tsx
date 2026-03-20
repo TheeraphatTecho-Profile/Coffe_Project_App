@@ -1,18 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
-  Image,
   StatusBar,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthStackParamList } from '../../types/navigation';
 import { Button } from '../../components/Button';
-import { COLORS, FONTS, SPACING } from '../../constants';
+import { SocialAuthButtons } from '../../components/SocialAuthButtons';
+import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
+import { useAuth } from '../../context/AuthContext';
+import { signInWithLINE } from '../../lib/lineAuth';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
@@ -20,64 +24,100 @@ type Props = {
 
 /**
  * Welcome/Landing screen with branding and login options.
- * Shows app logo, tagline, and sign-in buttons (Email + Google).
+ * Shows app logo, tagline, and sign-in buttons (Email, Google, Facebook, LINE).
  */
 export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
+  const { signInWithGoogle, signInWithFacebook } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const { error } = await signInWithGoogle();
+      if (error) Alert.alert('เข้าสู่ระบบด้วย Google ไม่สำเร็จ', error.message);
+    } catch (err) {
+      console.error('Google login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    try {
+      setLoading(true);
+      const { error } = await signInWithFacebook();
+      if (error) Alert.alert('เข้าสู่ระบบด้วย Facebook ไม่สำเร็จ', error.message);
+    } catch (err) {
+      console.error('Facebook login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLineLogin = async () => {
+    try {
+      setLoading(true);
+      const { error } = await signInWithLINE();
+      if (error) Alert.alert('เข้าสู่ระบบด้วย LINE ไม่สำเร็จ', error.message);
+    } catch (err) {
+      console.error('LINE login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <SafeAreaView style={styles.safeArea}>
-        {/* Top branding section */}
-        <View style={styles.brandSection}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Ionicons name="cafe" size={48} color={COLORS.text} />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* Top branding section */}
+          <View style={styles.brandSection}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoCircle}>
+                <Ionicons name="cafe" size={44} color={COLORS.primary} />
+              </View>
             </View>
-            <View style={styles.logoBadge}>
-              <Ionicons name="leaf" size={18} color={COLORS.white} />
+
+            <Text style={styles.title}>สวนกาแฟเลย</Text>
+            <Text style={styles.subtitle}>ระบบจัดการสวนกาแฟอัจฉริยะ</Text>
+
+            <View style={styles.platformBadge}>
+              <View style={styles.badgeDot} />
+              <Text style={styles.badgeText}>LOEI SPECIALTY COFFEE</Text>
             </View>
           </View>
 
-          <Text style={styles.title}>สวนกาแฟเลย</Text>
-          <Text style={styles.subtitle}>ดูแลสวนกาแฟอย่างมืออาชีพ</Text>
+          {/* Bottom action section */}
+          <View style={styles.actionSection}>
+            <Button
+              title="เข้าสู่ระบบด้วยอีเมล"
+              onPress={() => navigation.navigate('Login')}
+              variant="primary"
+              icon={<Ionicons name="mail-outline" size={20} color={COLORS.white} />}
+            />
 
-          <View style={styles.platformBadge}>
-            <View style={styles.badgeDot} />
-            <Text style={styles.badgeText}>LOEI SPECIALTY COFFEE PLATFORM</Text>
+            <SocialAuthButtons
+              onGooglePress={handleGoogleLogin}
+              onFacebookPress={handleFacebookLogin}
+              onLinePress={handleLineLogin}
+              loading={loading}
+            />
+
+            <View style={styles.registerRow}>
+              <Text style={styles.registerText}>ยังไม่มีบัญชี? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.registerLink}>สมัครสมาชิก</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.versionText}>Suan Kafe Loei v2.4.0</Text>
           </View>
-        </View>
-
-        {/* Bottom action section */}
-        <View style={styles.actionSection}>
-          <Button
-            title="เข้าสู่ระบบด้วยอีเมล"
-            onPress={() => navigation.navigate('Login')}
-            variant="primary"
-            icon={<Ionicons name="mail-outline" size={20} color={COLORS.white} />}
-          />
-
-          <Button
-            title="เข้าสู่ระบบด้วย Google"
-            onPress={() => {
-              // TODO: Implement Google sign-in
-            }}
-            variant="outline"
-            icon={<Text style={styles.googleIcon}>G</Text>}
-            style={styles.googleButton}
-          />
-
-          <View style={styles.registerRow}>
-            <Text style={styles.registerText}>ยังไม่มีบัญชี? </Text>
-            <Text
-              style={styles.registerLink}
-              onPress={() => navigation.navigate('Register')}
-            >
-              สมัครสมาชิก
-            </Text>
-          </View>
-
-          <Text style={styles.versionText}>v2.4.0</Text>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -91,47 +131,38 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   brandSection: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.xxxl,
+    paddingTop: SPACING.xxxxl,
+    minHeight: 300,
   },
   logoContainer: {
-    position: 'relative',
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.xl,
   },
   logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: COLORS.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: COLORS.borderLight,
-  },
-  logoBadge: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.background,
+    borderColor: COLORS.primary + '20',
   },
   title: {
-    fontSize: FONTS.sizes.xxxl,
+    fontSize: FONTS.sizes.xxl,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   subtitle: {
-    fontSize: FONTS.sizes.lg,
+    fontSize: FONTS.sizes.md,
     color: COLORS.textSecondary,
     marginBottom: SPACING.lg,
   },
@@ -141,7 +172,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceWarm,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
-    borderRadius: 20,
+    borderRadius: RADIUS.full,
     gap: SPACING.sm,
   },
   badgeDot: {
@@ -157,23 +188,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   actionSection: {
-    paddingHorizontal: SPACING.xxxl,
+    paddingHorizontal: SPACING.xxl,
     paddingBottom: SPACING.xxl,
     gap: SPACING.md,
-  },
-  googleButton: {
-    backgroundColor: COLORS.white,
-  },
-  googleIcon: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#4285F4',
   },
   registerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
   },
   registerText: {
     fontSize: FONTS.sizes.md,
@@ -183,7 +206,6 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.md,
     fontWeight: '600',
     color: COLORS.secondary,
-    textDecorationLine: 'underline',
   },
   versionText: {
     textAlign: 'center',
