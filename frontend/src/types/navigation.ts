@@ -15,6 +15,7 @@ export type MainTabParamList = {
   HomeTab: undefined;
   FarmTab: undefined;
   HarvestTab: undefined;
+  CommunityTab: undefined;
   PriceTab: undefined;
   ProfileTab: undefined;
 };
@@ -56,8 +57,17 @@ export type SettingsStackParamList = {
   ChangePassword: undefined;
 };
 
+export type CommunityStackParamList = {
+  CommunityFeed: undefined;
+  CreatePost: undefined;
+  PostDetail: { postId: string };
+  Groups: undefined;
+  GroupDetail: { groupId: string };
+};
+
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
   Settings: undefined;
+  Community: undefined;
 };
