@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +22,14 @@ import {
   getShiftSummary,
   HarvestFilters,
 } from '../../lib/harvestFilters';
+import {
+  PerformanceMonitor,
+  useDebouncedCallback,
+  usePerformanceMonitor,
+  logMemoryUsage,
+  toThaiYearCached,
+  normalizeShiftCached,
+} from '../../lib/performanceUtils';
 
 const SHIFT_OPTIONS = [
   { id: 'all', label: 'ทั้งหมด' },
@@ -42,20 +51,26 @@ export const HarvestScreen: React.FC = () => {
     farmId: 'all',
   });
 
+  const monitorPerformance = usePerformanceMonitor('HarvestScreen');
+
   const fetchHarvests = useCallback(async () => {
     if (!user?.uid) {
       setHarvests([]);
       setLoading(false);
       return;
     }
+    
+    PerformanceMonitor.start('fetchHarvests');
+    
     try {
       const data = await HarvestService.getAll(user.uid);
       setHarvests(data);
+      logMemoryUsage('After fetchHarvests');
     } catch (err) {
       console.error('Error fetching harvests:', err);
-      setHarvests([]);
     } finally {
       setLoading(false);
+      PerformanceMonitor.end('fetchHarvests');
     }
   }, [user]);
 
@@ -63,18 +78,28 @@ export const HarvestScreen: React.FC = () => {
     fetchHarvests();
   }, [fetchHarvests]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchHarvests();
     setRefreshing(false);
-  };
+  }, [fetchHarvests]);
 
-  const formatNumber = (n: number): string => n.toLocaleString('th-TH', { maximumFractionDigits: 1 });
+  const formatNumber = useCallback((n: number): string => 
+    n.toLocaleString('th-TH', { maximumFractionDigits: 1 }), []
+  );
 
-  const handleFilterChange = (partial: Partial<HarvestFilters>) => {
-    setFilters(prev => ({ ...prev, ...partial }));
-  };
+  // Debounced search handler
+  const handleSearchChange = useDebouncedCallback((text: string) => {
+    setFilters(prev => ({ ...prev, search: text }));
+  }, 300);
 
+  const handleFilterChange = useCallback((partial: Partial<HarvestFilters>) => {
+    monitorPerformance(() => {
+      setFilters(prev => ({ ...prev, ...partial }));
+    });
+  }, [monitorPerformance]);
+
+  // Memoized expensive calculations
   const hasActiveFilters = useMemo(() => {
     return (
       !!filters.search?.trim() ||
@@ -84,18 +109,40 @@ export const HarvestScreen: React.FC = () => {
     );
   }, [filters]);
 
-  const yearOptions = useMemo(() => ['ทั้งหมด', ...getAvailableYears(harvests)], [harvests]);
-  const farmOptions = useMemo(
-    () => [{ id: 'all', name: 'สวนทั้งหมด' }, ...getFarmOptions(harvests)],
-    [harvests]
-  );
+  const yearOptions = useMemo(() => {
+    PerformanceMonitor.start('yearOptions');
+    const result = ['ทั้งหมด', ...getAvailableYears(harvests)];
+    PerformanceMonitor.end('yearOptions');
+    return result;
+  }, [harvests]);
 
-  const filteredHarvests = useMemo(() => filterHarvests(harvests, filters), [harvests, filters]);
-  const shiftSummary = useMemo(() => getShiftSummary(filteredHarvests), [filteredHarvests]);
+  const farmOptions = useMemo(() => {
+    PerformanceMonitor.start('farmOptions');
+    const result = [{ id: 'all', name: 'สวนทั้งหมด' }, ...getFarmOptions(harvests)];
+    PerformanceMonitor.end('farmOptions');
+    return result;
+  }, [harvests]);
+
+  const filteredHarvests = useMemo(() => {
+    PerformanceMonitor.start('filterHarvests');
+    const result = filterHarvests(harvests, filters);
+    PerformanceMonitor.end('filterHarvests');
+    return result;
+  }, [harvests, filters]);
+
+  const shiftSummary = useMemo(() => {
+    PerformanceMonitor.start('shiftSummary');
+    const result = getShiftSummary(filteredHarvests);
+    PerformanceMonitor.end('shiftSummary');
+    return result;
+  }, [filteredHarvests]);
+
   const topShift = shiftSummary[0];
 
   const topFarm = useMemo(() => {
     if (!filteredHarvests.length) return null;
+    
+    PerformanceMonitor.start('topFarm');
     const stats = filteredHarvests.reduce((acc, h) => {
       if (!h.farm_id) return acc;
       const current = acc.get(h.farm_id) || {
@@ -109,6 +156,7 @@ export const HarvestScreen: React.FC = () => {
       return acc;
     }, new Map<string, { name: string; weight: number; income: number }>());
     const sorted = Array.from(stats.values()).sort((a, b) => b.weight - a.weight);
+    PerformanceMonitor.end('topFarm');
     return sorted[0] || null;
   }, [filteredHarvests]);
 
@@ -116,22 +164,78 @@ export const HarvestScreen: React.FC = () => {
     () => filteredHarvests.reduce((sum, h) => sum + (h.weight_kg || 0), 0),
     [filteredHarvests]
   );
+  
   const totalIncome = useMemo(
     () => filteredHarvests.reduce((sum, h) => sum + (h.income || 0), 0),
     [filteredHarvests]
   );
+  
   const entryCount = filteredHarvests.length;
   const avgWeight = entryCount ? totalYield / entryCount : 0;
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters({ search: '', year: 'ทั้งหมด', shift: 'all', farmId: 'all' });
-  };
+  }, []);
 
-  const emptyStateTitle = harvests.length === 0 ? 'ยังไม่มีข้อมูลการเก็บเกี่ยว' : 'ไม่พบข้อมูลตามตัวกรอง';
-  const emptyStateSubtitle =
-    harvests.length === 0
+  // Memoized empty state text
+  const emptyStateTexts = useMemo(() => ({
+    title: harvests.length === 0 ? 'ยังไม่มีข้อมูลการเก็บเกี่ยว' : 'ไม่พบข้อมูลตามตัวกรอง',
+    subtitle: harvests.length === 0
       ? 'เริ่มบันทึกผลผลิตจากสวนกาแฟของคุณ'
-      : 'ลองเปลี่ยนตัวกรองหรือรีเซ็ตเพื่อดูรายการทั้งหมด';
+      : 'ลองเปลี่ยนตัวกรองหรือรีเซ็ตเพื่อดูรายการทั้งหมด',
+  }), [harvests.length]);
+
+  // Optimized harvest item renderer
+  const renderHarvestItem = useCallback(({ item: h }: { item: Harvest }) => {
+    const date = h.harvest_date ? new Date(h.harvest_date) : new Date();
+    const day = date.getDate().toString();
+    const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const monthShort = monthNames[date.getMonth()] || '';
+    const yearBE = (date.getFullYear() + 543).toString();
+
+    return (
+      <TouchableOpacity
+        key={h.id}
+        style={styles.harvestCard}
+        onPress={() => navigation.navigate('HarvestDetail', { harvestId: h.id })}
+      >
+        <View style={styles.dateBadge}>
+          <Text style={styles.dateDay}>{day}</Text>
+          <Text style={styles.dateMonth}>{monthShort}</Text>
+          <Text style={styles.dateYear}>{yearBE}</Text>
+        </View>
+        <View style={styles.harvestInfo}>
+          <View style={styles.harvestHeader}>
+            <Text style={styles.harvestVariety}>{h.variety || 'พันธุ์ไม่ระบุ'}</Text>
+            <Text style={styles.harvestShift}>
+              {normalizeShiftCached(h.shift) || 'ไม่ระบุ'}
+            </Text>
+          </View>
+          <View style={styles.harvestDetails}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>น้ำหนัก:</Text>
+              <Text style={styles.detailValue}>{formatNumber(h.weight_kg || 0)} กก.</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>รายได้:</Text>
+              <Text style={styles.detailValue}>฿{formatNumber(h.income || 0)}</Text>
+            </View>
+          </View>
+        </View>
+        <View style={styles.harvestActions}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <Ionicons name="trash-outline" size={16} color={COLORS.error} />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  }, [navigation, formatNumber]);
+
+  // List key extractor
+  const keyExtractor = useCallback((item: Harvest) => item.id, []);
 
   return (
     <View style={styles.container}>
@@ -143,27 +247,24 @@ export const HarvestScreen: React.FC = () => {
             <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => navigation.navigate('AddHarvest')}
-            >
-              <Ionicons name="add-circle" size={28} color={COLORS.primary} />
+            <TouchableOpacity style={styles.addButton}>
+              <Ionicons name="add" size={20} color={COLORS.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.notifButton}>
-              <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
+              <Ionicons name="notifications-outline" size={20} color={COLORS.text} />
             </TouchableOpacity>
           </View>
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+          style={styles.scrollContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           {/* Section label */}
           <Text style={styles.sectionLabel}>INVENTORY & YIELD</Text>
           <Text style={styles.title}>รายการผลผลิต</Text>
           <Text style={styles.subtitle}>
-            บันทึกการเก็บเกี่ยวจากไร่กาแฟบนขอบภูหลวง{'\n'}
+            บันทึกการเก็บเกี่ยวจากไร่กาแฟบนขอบภูหลวง{' '}
             ข้อมูลประวัติการเก็บเกี่ยวรายแปลงและรายได้รวมสะสม
           </Text>
 
@@ -174,8 +275,8 @@ export const HarvestScreen: React.FC = () => {
               style={styles.searchInput}
               placeholder="ค้นหาตามวันที่หรือรหัสแปลง..."
               placeholderTextColor={COLORS.textLight}
-              value={filters.search}
-              onChangeText={(text) => handleFilterChange({ search: text })}
+              defaultValue={filters.search}
+              onChangeText={handleSearchChange}
             />
           </View>
 
@@ -234,100 +335,29 @@ export const HarvestScreen: React.FC = () => {
             </ScrollView>
           </View>
 
-          {/* Insights card */}
-          <View style={styles.insightsCard}>
-            <Text style={styles.sectionTitle}>สรุปตัวกรองปัจจุบัน</Text>
-            <View style={styles.insightRow}>
-              <View style={styles.insightStat}>
-                <Text style={styles.insightLabel}>จำนวนรายการ</Text>
-                <Text style={styles.insightValue}>{entryCount}</Text>
-              </View>
-              <View style={styles.insightStat}>
-                <Text style={styles.insightLabel}>เฉลี่ยต่อครั้ง</Text>
-                <Text style={styles.insightValue}>{formatNumber(avgWeight)} กก.</Text>
-              </View>
-            </View>
-            <View style={styles.insightRow}>
-              <View style={styles.insightStat}>
-                <Text style={styles.insightLabel}>สวนที่ทำผลผลิตสูงสุด</Text>
-                <Text style={styles.insightValueSmall}>
-                  {topFarm ? `${topFarm.name} • ${formatNumber(topFarm.weight)} กก.` : '—'}
-                </Text>
-              </View>
-              <View style={styles.insightStat}>
-                <Text style={styles.insightLabel}>รอบที่มีประสิทธิภาพ</Text>
-                <Text style={styles.insightValueSmall}>
-                  {topShift
-                    ? `${topShift.label} • ${topShift.count} ครั้ง (${formatNumber(topShift.totalWeight)} กก.)`
-                    : '—'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Harvest entries */}
+          {/* Harvest entries with FlatList for performance */}
           {filteredHarvests.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="basket-outline" size={40} color={COLORS.textLight} />
-              <Text style={styles.emptyTitle}>{emptyStateTitle}</Text>
-              <Text style={styles.emptyText}>{emptyStateSubtitle}</Text>
+              <Text style={styles.emptyTitle}>{emptyStateTexts.title}</Text>
+              <Text style={styles.emptyText}>{emptyStateTexts.subtitle}</Text>
             </View>
           ) : (
-            filteredHarvests.map((h) => {
-              const date = h.harvest_date ? new Date(h.harvest_date) : new Date();
-              const day = date.getDate().toString();
-              const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-              const monthShort = monthNames[date.getMonth()] || '';
-              const yearBE = (date.getFullYear() + 543).toString();
-
-              return (
-                <TouchableOpacity
-                  key={h.id}
-                  style={styles.harvestCard}
-                  onPress={() => navigation.navigate('HarvestDetail', { harvestId: h.id })}
-                >
-                  {/* Date badge */}
-                  <View style={styles.dateBadge}>
-                    <Text style={styles.dateMonth}>{monthShort}</Text>
-                    <Text style={styles.dateDay}>{day}</Text>
-                    <Text style={styles.dateYear}>{yearBE}</Text>
-                  </View>
-
-                  {/* Details */}
-                  <View style={styles.harvestDetails}>
-                    <View style={styles.harvestTopRow}>
-                      <View style={[styles.tagBadge, { backgroundColor: COLORS.primary }]}>
-                        <Text style={styles.tagText}>{h.farms?.name || 'สวน'}</Text>
-                      </View>
-                      <Text style={styles.harvestShift}>{h.shift || '-'}</Text>
-                    </View>
-                    <Text style={styles.harvestVariety}>{h.variety || 'กาแฟ'}</Text>
-
-                    <View style={styles.harvestStatsRow}>
-                      <View style={styles.harvestStat}>
-                        <Text style={styles.harvestStatLabel}>ปริมาณสุทธิ</Text>
-                        <View style={styles.harvestStatValueRow}>
-                          <Text style={styles.harvestStatValue}>{formatNumber(h.weight_kg || 0)}</Text>
-                          <Text style={styles.harvestStatUnit}> กก.</Text>
-                        </View>
-                      </View>
-                      <View style={styles.harvestStat}>
-                        <Text style={styles.harvestStatLabel}>รายได้รวม</Text>
-                        <View style={styles.harvestStatValueRow}>
-                          <Text style={[styles.harvestStatValue, { color: COLORS.secondary }]}>
-                            {formatNumber(h.income || 0)}
-                          </Text>
-                          <Text style={styles.harvestStatUnit}> บาท</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
+            <FlatList
+              data={filteredHarvests}
+              renderItem={renderHarvestItem}
+              keyExtractor={keyExtractor}
+              style={styles.harvestList}
+              scrollEnabled={false}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={10}
+              updateCellsBatchingPeriod={50}
+              initialNumToRender={10}
+              windowSize={10}
+            />
           )}
 
-          {/* Total yield card — real computed values */}
+          {/* Total yield card */}
           <View style={styles.totalYieldCard}>
             <Text style={styles.totalYieldLabel}>
               ผลผลิตรวม {filters.year === 'ทั้งหมด' ? 'ทั้งหมด' : `พ.ศ. ${filters.year}`}
@@ -338,7 +368,7 @@ export const HarvestScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Total income card — real computed values */}
+          {/* Total income card */}
           <View style={styles.totalIncomeCard}>
             <Text style={styles.totalIncomeLabel}>รายได้รวม</Text>
             <Text style={styles.totalIncomeValue}>{formatNumber(totalIncome)}</Text>
@@ -450,6 +480,21 @@ const styles = StyleSheet.create({
   dateDay: { fontSize: FONTS.sizes.xxl, fontWeight: '700', color: COLORS.text },
   dateYear: { fontSize: FONTS.sizes.xs, color: COLORS.textLight },
   harvestDetails: { flex: 1 },
+  harvestInfo: { flex: 1 },
+  harvestHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
+  harvestActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.xs },
+  detailLabel: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
+  detailValue: { fontSize: FONTS.sizes.sm, fontWeight: '600', color: COLORS.text },
+  harvestList: { marginBottom: SPACING.lg },
   harvestTopRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs },
   tagBadge: {
     paddingHorizontal: SPACING.sm, paddingVertical: 2, borderRadius: RADIUS.sm,
