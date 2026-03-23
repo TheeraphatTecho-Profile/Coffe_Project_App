@@ -1,10 +1,25 @@
 import React from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 import { SettingsStack } from './SettingsStack';
 import { useAuth } from '../context/AuthContext';
+// Cost screens
+import { CostListScreen } from '../screens/cost/CostListScreen';
+import { AddCostScreen } from '../screens/cost/AddCostScreen';
+import { CostAnalyticsScreen } from '../screens/cost/CostAnalyticsScreen';
+// Maintenance screens
+import { MaintenanceDashboardScreen } from '../screens/maintenance/MaintenanceDashboardScreen';
+import { MaintenanceCalendarScreen } from '../screens/maintenance/MaintenanceCalendarScreen';
+import { AddMaintenanceTaskScreen } from '../screens/maintenance/AddMaintenanceTaskScreen';
+// Weather screens
+import { WeatherAlertsScreen } from '../screens/weather/WeatherAlertsScreen';
+import { WeatherAlertSettingsScreen } from '../screens/weather/WeatherAlertSettingsScreen';
+// Market screens
+import { MarketIntelligenceScreen } from '../screens/market/MarketIntelligenceScreen';
+import { BuyerManagementScreen } from '../screens/market/BuyerManagementScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -12,7 +27,11 @@ export const AppNavigator: React.FC = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6B4226" />
+      </View>
+    );
   }
 
   return (
@@ -21,6 +40,20 @@ export const AppNavigator: React.FC = () => {
         <>
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="Settings" component={SettingsStack} />
+          {/* Cost tracking */}
+          <Stack.Screen name="CostList" component={CostListScreen} />
+          <Stack.Screen name="AddCost" component={AddCostScreen} />
+          <Stack.Screen name="CostAnalytics" component={CostAnalyticsScreen} />
+          {/* Maintenance */}
+          <Stack.Screen name="MaintenanceDashboard" component={MaintenanceDashboardScreen} />
+          <Stack.Screen name="MaintenanceCalendar" component={MaintenanceCalendarScreen} />
+          <Stack.Screen name="AddMaintenanceTask" component={AddMaintenanceTaskScreen} />
+          {/* Weather */}
+          <Stack.Screen name="WeatherAlerts" component={WeatherAlertsScreen} />
+          <Stack.Screen name="WeatherAlertSettings" component={WeatherAlertSettingsScreen} />
+          {/* Market */}
+          <Stack.Screen name="MarketIntelligence" component={MarketIntelligenceScreen} />
+          <Stack.Screen name="BuyerManagement" component={BuyerManagementScreen} />
         </>
       ) : (
         <Stack.Screen name="Auth" component={AuthStack} />
@@ -28,3 +61,12 @@ export const AppNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FDFAF6',
+  },
+});

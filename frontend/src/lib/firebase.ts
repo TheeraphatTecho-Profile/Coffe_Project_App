@@ -1,6 +1,13 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import {
+  getAuth,
+  initializeAuth,
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  Auth,
+} from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'YOUR_API_KEY',
@@ -20,7 +27,20 @@ const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebas
 /**
  * Firebase Auth instance — used for all authentication operations.
  */
-const auth: Auth = getAuth(app);
+const auth: Auth = (() => {
+  if (Platform.OS !== 'web') {
+    return getAuth(app);
+  }
+
+  try {
+    return initializeAuth(app, {
+      persistence: browserLocalPersistence,
+      popupRedirectResolver: browserPopupRedirectResolver,
+    });
+  } catch {
+    return getAuth(app);
+  }
+})();
 
 /**
  * Firestore instance — used for all database operations.

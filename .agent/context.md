@@ -13,7 +13,7 @@
 | **วันที่เริ่ม**   | 1 มีนาคม 2569                          |
 | **เจ้าของ**       | qqkiller2006                           |
 | **จุดประสงค์**    | พัฒนา mobile app สำหรับเชื่อมต่อข้อมูล coffee_สวน ให้ผู้ใช้จัดการผ่านโทรศัพท์ |
-| **สถานะปัจจุบัน** | ✅ Phase 2 Complete — Firebase Migration & Testing |
+| **สถานะปัจจุบัน** | ✅ Phase 4 Complete — Community Feature & Persona Testing |
 
 ---
 
@@ -62,19 +62,21 @@
    │   ├── Google (signInWithPopup)
    │   ├── Facebook (signInWithPopup)
    │   └── LINE (OAuthProvider OIDC)
-   ├── Main Tabs
+   ├── Main Tabs (6 tabs)
    │   ├── Home (Dashboard with stats)
    │   ├── My Farms → Add Farm (Step 1-4)
    │   ├── Harvest (full CRUD + summary)
+   │   ├── Community (feed, posts, comments, groups)
    │   ├── Price/Analytics (charts + AI insights)
    │   └── Profile (settings + theme)
    ├── Services
    │   ├── firebaseDb.ts (Firestore CRUD)
+   │   ├── communityService.ts (community posts/comments/groups)
    │   ├── exportService.ts (CSV export)
    │   └── offlineService.ts (AsyncStorage cache)
    └── [Firebase Backend]
        ├── Auth (Firebase Authentication)
-       └── Firestore (farms + harvests collections)
+       └── Firestore (farms + harvests + community collections)
 ```
 
 ---

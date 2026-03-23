@@ -1,43 +1,159 @@
 // Global mocks for Jest test environment
 
-// Mock @testing-library/react-native (avoids parsing react-native source)
+// Mock react-dom/server for renderToString
+jest.mock('react-dom/server', () => ({
+  renderToString: jest.fn(() => '<div></div>'),
+}));
+
+// react-native is handled by moduleNameMapper in jest.config.js
+// Do NOT use jest.mock('react-native', ...) here — it conflicts with moduleNameMapper in setupFilesAfterEnv
+
+// Mock Dimensions globally
+jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
+  get: jest.fn(() => ({
+    width: 375,
+    height: 667,
+  })),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+}));
+
+// Mock @testing-library/react-native by manually resolving React element trees
 jest.mock('@testing-library/react-native', () => {
   const React = require('react');
-  return {
-    render: (component) => ({
-      getByText: jest.fn(),
-      getByTestId: jest.fn(),
-      queryByText: jest.fn(),
-      queryByTestId: jest.fn(),
-      findByText: jest.fn(),
-      findByTestId: jest.fn(),
-      toJSON: jest.fn(),
-      unmount: jest.fn(),
-    }),
-    renderHook: (hookFn, options) => {
-      let result = { current: undefined };
-      const wrapper = options?.wrapper || (({ children }) => children);
-      const TestComponent = () => {
-        result.current = hookFn();
-        return null;
-      };
-      // Simple synchronous render for hook testing
+
+  // Recursively resolve a React element into a plain tree
+  const resolveElement = (el, depth) => {
+    if (depth > 20) return null; // prevent infinite recursion
+    if (el == null || typeof el === 'boolean') return null;
+    if (typeof el === 'string' || typeof el === 'number') return String(el);
+    if (Array.isArray(el)) return el.map(c => resolveElement(c, depth + 1)).filter(Boolean);
+
+    // React element - function component
+    if (el.type && typeof el.type === 'function') {
       try {
-        const element = React.createElement(wrapper, { children: React.createElement(TestComponent) });
-        // We rely on React to call the component synchronously
-        require('react-dom/server').renderToString(element);
-      } catch (e) {
-        // Ignore render errors in test environment
+        const result = el.type({ ...el.props });
+        return resolveElement(result, depth + 1);
+      } catch(e) {
+        // Hooks fail outside React runtime — fall back to rendering children
+        if (el.props && el.props.children) {
+          return resolveElement(el.props.children, depth + 1);
+        }
+        return null;
       }
-      return { result };
+    }
+
+    // Host element (string type like 'View', 'Text', 'div')
+    const props = { ...(el.props || {}) };
+    const rawChildren = props.children;
+    delete props.children;
+
+    let children = [];
+    if (rawChildren != null) {
+      const arr = Array.isArray(rawChildren) ? rawChildren : [rawChildren];
+      children = arr.map(c => resolveElement(c, depth + 1)).filter(Boolean);
+    }
+
+    return { type: el.type || 'unknown', props, children };
+  };
+
+  // Walk resolved tree
+  const walkTree = (node, predicate) => {
+    if (!node) return null;
+    if (typeof node === 'string') return predicate(node) ? node : null;
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const found = walkTree(child, predicate);
+        if (found) return found;
+      }
+      return null;
+    }
+    if (predicate(node)) return node;
+    for (const child of (node.children || [])) {
+      const found = walkTree(child, predicate);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const render = (component) => {
+    const resolved = resolveElement(component, 0);
+
+    const getByText = (text) => {
+      // Find a node that contains the text as a direct string child
+      const found = walkTree(resolved, (node) => {
+        if (typeof node === 'string') return node === text;
+        if (node.children) {
+          return node.children.some(c => typeof c === 'string' && c === text);
+        }
+        return false;
+      });
+      if (!found) throw new Error(`Unable to find text: ${text}`);
+      return typeof found === 'string' ? { type: 'Text', props: {}, children: [found] } : found;
+    };
+
+    const getByTestId = (testId) => {
+      const found = walkTree(resolved, (node) => {
+        if (typeof node === 'string') return false;
+        return node.props && (node.props.testID === testId || node.props['data-testid'] === testId);
+      });
+      if (!found) throw new Error(`Unable to find testID: ${testId}`);
+      return found;
+    };
+
+    const queryByText = (text) => { try { return getByText(text); } catch(e) { return null; } };
+    const queryByTestId = (testId) => { try { return getByTestId(testId); } catch(e) { return null; } };
+
+    return {
+      getByText,
+      getByTestId,
+      queryByText,
+      queryByTestId,
+      findByText: async (text) => getByText(text),
+      findByTestId: async (testId) => getByTestId(testId),
+      toJSON: () => resolved,
+      unmount: jest.fn(),
+      rerender: jest.fn(),
+    };
+  };
+
+  const renderHook = (hookFn, options = {}) => {
+    const TestRenderer = require('react-test-renderer');
+    const Wrapper = options.wrapper || (({ children }) => children);
+    const mockResult = { current: undefined };
+
+    const TestComponent = () => {
+      mockResult.current = hookFn();
+      return null;
+    };
+
+    let renderer;
+    TestRenderer.act(() => {
+      renderer = TestRenderer.create(
+        React.createElement(Wrapper, null, React.createElement(TestComponent))
+      );
+    });
+
+    return {
+      result: mockResult,
+      rerender: jest.fn(),
+      unmount: () => renderer && TestRenderer.act(() => renderer.unmount()),
+    };
+  };
+
+  return {
+    render,
+    renderHook,
+    act: async (fn) => {
+      const TestRenderer = require('react-test-renderer');
+      await TestRenderer.act(async () => { await fn(); });
     },
-    act: async (fn) => { await fn(); },
     fireEvent: {
-      press: jest.fn(),
+      press: jest.fn((el) => { if (el && el.props && el.props.onPress) el.props.onPress(); }),
       changeText: jest.fn(),
       scroll: jest.fn(),
     },
-    waitFor: async (fn) => fn(),
+    waitFor: async (fn) => { return await fn(); },
     screen: {
       getByText: jest.fn(),
       getByTestId: jest.fn(),
@@ -55,15 +171,20 @@ jest.mock('firebase/app', () => ({
 // Mock firebase/auth
 jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(() => 'mock-auth'),
+  initializeAuth: jest.fn(() => 'mock-auth'),
   onAuthStateChanged: jest.fn((_auth, cb) => { cb(null); return jest.fn(); }),
   signInWithEmailAndPassword: jest.fn(),
   createUserWithEmailAndPassword: jest.fn(),
   signOut: jest.fn(),
   sendPasswordResetEmail: jest.fn(),
+  browserLocalPersistence: 'mock-browser-local-persistence',
+  browserPopupRedirectResolver: 'mock-browser-popup-redirect-resolver',
   GoogleAuthProvider: jest.fn().mockImplementation(() => ({ addScope: jest.fn() })),
   FacebookAuthProvider: jest.fn().mockImplementation(() => ({ addScope: jest.fn() })),
   OAuthProvider: jest.fn().mockImplementation(() => ({ addScope: jest.fn() })),
   signInWithPopup: jest.fn(),
+  signInWithRedirect: jest.fn().mockResolvedValue(undefined),
+  getRedirectResult: jest.fn().mockResolvedValue(null),
   signInWithCredential: jest.fn(),
   updateProfile: jest.fn(),
 }));
@@ -219,14 +340,28 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-// Mock @notifee/react-native
-jest.mock('@notifee/react-native', () => ({
-  createChannel: jest.fn(),
-  displayNotification: jest.fn(),
-  cancelAllNotifications: jest.fn(),
-  requestPermission: jest.fn(),
-  AuthorizationStatus: { AUTHORIZED: 1 },
-}));
+// Mock @notifee/react-native with all APIs used by NotificationService
+const mockNotifee = {
+  requestPermission: jest.fn().mockResolvedValue({ authorizationStatus: 1 }),
+  getNotificationSettings: jest.fn().mockResolvedValue({ authorizationStatus: 1 }),
+  createChannel: jest.fn().mockResolvedValue(undefined),
+  displayNotification: jest.fn().mockResolvedValue(undefined),
+  createTriggerNotification: jest.fn().mockResolvedValue(undefined),
+  cancelNotification: jest.fn().mockResolvedValue(undefined),
+  cancelAllNotifications: jest.fn().mockResolvedValue(undefined),
+  getTriggerNotificationIds: jest.fn().mockResolvedValue([]),
+  onForegroundEvent: jest.fn().mockImplementation(() => jest.fn()),
+  onBackgroundEvent: jest.fn().mockImplementation((handler) => handler),
+  AndroidImportance: { HIGH: 4, DEFAULT: 3 },
+  AndroidVisibility: { PUBLIC: 1 },
+  TriggerType: { TIMESTAMP: 0 },
+  AndroidStyle: { BIGTEXT: 1 },
+  EventType: { PRESS: 1 },
+};
+
+jest.mock('@notifee/react-native', () => mockNotifee);
+
+global.__NOTIFEE__ = mockNotifee;
 
 // Mock react-native-chart-kit
 jest.mock('react-native-chart-kit', () => {

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { FarmStackParamList } from '../../types/navigation';
+import { FarmStackParamList, FarmData } from '../../types/navigation';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 
 type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'AddFarmStep4'>;
-  route: any;
+  route: { params: { farmData: Partial<FarmData> } };
 };
 
 type CoffeeVariety = 'arabica' | 'robusta' | 'other';
@@ -41,13 +41,13 @@ export const AddFarmStep4Screen: React.FC<Props> = ({ navigation, route }) => {
       setLoading(true);
       await FarmService.create(user.uid, {
         name: farmData.name,
-        area: parseFloat(farmData.area) || 0,
-        soil_type: farmData.soilType || null,
-        water_source: farmData.waterSource || null,
+        area: farmData.area,
+        soil_type: farmData.soil_type || null,
+        water_source: farmData.water_source || null,
         province: farmData.province || 'เลย',
         district: farmData.district || null,
-        altitude: farmData.altitude ? parseInt(farmData.altitude) : null,
-        variety: variety,
+        altitude: farmData.altitude || null,
+        variety: variety === 'arabica' ? 'Arabica' : variety === 'robusta' ? 'Robusta' : 'อื่นๆ',
         tree_count: treeCount ? parseInt(treeCount) : null,
         planting_year: plantingYear ? parseInt(plantingYear) : null,
         notes: notes || null,
