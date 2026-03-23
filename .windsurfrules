@@ -1,3 +1,26 @@
+## RULE #0 — NON-NEGOTIABLE
+
+An iteration EXISTS only if ### CODE contains actual file content.
+Proof of existence = file content pasted inline in this chat.
+
+The following are NOT proof:
+- "Successfully created X files"
+- "Implementation complete"  
+- "Files provided above/in repo/in diffs"
+- Any narrative or summary
+
+If ### CODE is empty = iteration did not happen = do not merge = do not mark DONE.
+No exceptions. No flexibility. This rule overrides everything else.
+
+## ABSOLUTE RULE — highest priority
+
+"Full file content" means paste the entire file inline in the chat response.
+No exceptions. Not "(see repo)", not "(provided above)", not "(in diffs)".
+If a file exists in the project, paste it here, completely, every time.
+This rule overrides all token/length concerns.
+If the response is too long, split into multiple messages — never truncate code.
+
+
 # ============================================================
 # .windsurfrules — Autonomous Dev Agent
 # ============================================================

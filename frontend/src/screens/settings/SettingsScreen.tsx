@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,12 +20,30 @@ export const SettingsScreen: React.FC = () => {
   const { signOut } = useAuth();
 
   const handleLogout = () => {
+    const doLogout = async () => {
+      try {
+        await signOut();
+      } catch (err) {
+        console.error('Logout failed:', err);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = typeof globalThis.confirm === 'function'
+        ? globalThis.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')
+        : true;
+      if (confirmed) {
+        void doLogout();
+      }
+      return;
+    }
+
     Alert.alert(
       'ออกจากระบบ',
       'คุณต้องการออกจากระบบใช่หรือไม่?',
       [
         { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'ออกจากระบบ', style: 'destructive', onPress: signOut },
+        { text: 'ออกจากระบบ', style: 'destructive', onPress: () => { void doLogout(); } },
       ]
     );
   };

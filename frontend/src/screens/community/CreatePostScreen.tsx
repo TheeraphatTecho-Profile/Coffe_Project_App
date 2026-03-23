@@ -98,7 +98,7 @@ export const CreatePostScreen: React.FC<Props> = ({ navigation }) => {
         title: title.trim(),
         content: content.trim(),
         image_url: image || undefined,
-        post_type: selectedType,
+        post_type: selectedType as 'share' | 'question' | 'tips' | 'announcement' | 'market',
         tags: selectedTags,
       });
 

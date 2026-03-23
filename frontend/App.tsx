@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { ThemeProvider as RichThemeProvider } from './src/theme/ThemeProvider';
 
 const AppContent = () => {
   const { colors, isDark } = useTheme();
@@ -22,11 +23,13 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <NavigationContainer>
-              <AppContent />
-            </NavigationContainer>
-          </AuthProvider>
+          <RichThemeProvider>
+            <AuthProvider>
+              <NavigationContainer>
+                <AppContent />
+              </NavigationContainer>
+            </AuthProvider>
+          </RichThemeProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

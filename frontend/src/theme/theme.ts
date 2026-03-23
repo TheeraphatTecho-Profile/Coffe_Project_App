@@ -1,67 +1,67 @@
 import { Theme } from './types';
 
-// Light Theme - Coffee inspired color palette
+// Light Theme - Professional coffee farm business palette
 export const lightTheme: Theme = {
   colors: {
-    // Primary palette - Deep coffee browns
-    primary: '#3E2723', // Dark coffee bean
-    primaryDark: '#2E1A17',
-    primaryLight: '#5D4037',
-    primaryUltraLight: '#8D6E63',
+    // Primary palette - Professional forest green
+    primary: '#2E7D32',
+    primaryDark: '#1B5E20',
+    primaryLight: '#4CAF50',
+    primaryUltraLight: '#A5D6A7',
 
-    // Secondary palette - Warm earth tones
-    secondary: '#8D6E63', // Light brown
-    secondaryDark: '#6D4C41',
-    secondaryLight: '#A1887F',
-    golden: '#D4A574', // Golden coffee
-    goldenLight: '#E6C9A8',
+    // Secondary palette - Warm gold accent
+    secondary: '#C49A2A',
+    secondaryDark: '#A07C1C',
+    secondaryLight: '#DABB5C',
+    golden: '#D4A84C',
+    goldenLight: '#F0DCA0',
 
-    // Backgrounds - Warm, inviting tones
-    background: '#FAF7F2', // Cream paper
-    backgroundDark: '#F5F0E6',
+    // Backgrounds - Clean, bright
+    background: '#F5F7FA',
+    backgroundDark: '#EEF1F5',
     surface: '#FFFFFF',
-    surfaceDark: '#F8F5F0',
-    surfaceWarm: '#FEFBF7',
+    surfaceDark: 'rgba(255,255,255,0.12)',
+    surfaceWarm: '#F0F7F1',
     surfaceCard: '#FFFFFF',
 
-    // Text colors - High contrast on warm backgrounds
-    text: '#2E1A17',
-    textSecondary: '#5D4037',
-    textLight: '#8D6E63',
+    // Text colors - High contrast
+    text: '#1A2332',
+    textSecondary: '#5A6B7D',
+    textLight: '#8E9AAD',
     textOnPrimary: '#FFFFFF',
     textOnSecondary: '#FFFFFF',
-    textDisabled: '#A1887F',
+    textDisabled: '#B0BAC5',
 
-    // Status colors - Nature inspired
-    success: '#4CAF50', // Fresh coffee leaf
+    // Status colors
+    success: '#2E7D32',
     successLight: '#E8F5E9',
-    successDark: '#388E3C',
-    error: '#E53935', // Red warning
+    successDark: '#1B5E20',
+    error: '#D32F2F',
     errorLight: '#FFEBEE',
-    errorDark: '#C62828',
-    warning: '#FF9800', // Amber sunrise
+    errorDark: '#B71C1C',
+    warning: '#F57C00',
     warningLight: '#FFF3E0',
-    warningDark: '#F57C00',
-    info: '#2196F3', // Clear sky
+    warningDark: '#E65100',
+    info: '#1976D2',
     infoLight: '#E3F2FD',
-    infoDark: '#1976D2',
+    infoDark: '#0D47A1',
 
-    // UI elements - Subtle boundaries
-    border: '#E0E0E0',
-    borderLight: '#F0F0F0',
-    borderDark: '#BDBDBD',
-    inputBg: '#FFFFFF',
-    divider: '#EEEEEE',
+    // UI elements
+    border: '#E2E8F0',
+    borderLight: '#EDF2F7',
+    borderDark: '#CBD5E0',
+    inputBg: '#F7FAFC',
+    divider: '#EDF2F7',
     overlay: 'rgba(0, 0, 0, 0.5)',
 
     // Coffee specific colors
-    coffeeBean: '#3E2723',
-    coffeeLeaf: '#4CAF50',
-    coffeeMilk: '#D4A574',
-    mountain: '#78909C', // Mountain gray
-    soil: '#6D4C41', // Earth brown
+    coffeeBean: '#1A3C2A',
+    coffeeLeaf: '#2E7D32',
+    coffeeMilk: '#D4A84C',
+    mountain: '#607D8B',
+    soil: '#5D4037',
 
-    // Neutrals - Complete grayscale
+    // Neutrals
     white: '#FFFFFF',
     black: '#000000',
     gray50: '#FAFAFA',
@@ -131,45 +131,27 @@ export const lightTheme: Theme = {
 
   shadows: {
     xs: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
+      boxShadow: '0px 1px 2px rgba(0,0,0,0.05)',
       elevation: 1,
     },
     sm: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
+      boxShadow: '0px 1px 4px rgba(0,0,0,0.08)',
       elevation: 2,
     },
     md: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.12,
-      shadowRadius: 8,
+      boxShadow: '0px 2px 8px rgba(0,0,0,0.12)',
       elevation: 4,
     },
     lg: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
+      boxShadow: '0px 4px 12px rgba(0,0,0,0.15)',
       elevation: 8,
     },
     xl: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.18,
-      shadowRadius: 16,
+      boxShadow: '0px 8px 16px rgba(0,0,0,0.18)',
       elevation: 12,
     },
     colored: {
-      shadowColor: '#3E2723',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
+      boxShadow: '0px 2px 8px rgba(62,39,35,0.2)',
       elevation: 4,
     },
   },
@@ -195,59 +177,69 @@ export const lightTheme: Theme = {
   },
 };
 
-// Dark Theme - Comfortable evening coffee experience
+// Dark Theme - Professional dark mode
 export const darkTheme: Theme = {
   ...lightTheme,
   colors: {
     ...lightTheme.colors,
-    
+
+    // Primary - Lighter green for dark bg
+    primary: '#4CAF50',
+    primaryDark: '#2E7D32',
+    primaryLight: '#81C784',
+
+    // Secondary - Brighter gold on dark
+    secondary: '#DABB5C',
+    secondaryDark: '#C49A2A',
+
     // Dark theme backgrounds
-    background: '#1A1A1A',
-    backgroundDark: '#121212',
-    surface: '#2D2D2D',
-    surfaceDark: '#252525',
-    surfaceCard: '#2D2D2D',
+    background: '#0F1419',
+    backgroundDark: '#0A0E12',
+    surface: '#1C2530',
+    surfaceDark: 'rgba(255,255,255,0.06)',
+    surfaceCard: '#1C2530',
+    surfaceWarm: '#1A2A22',
 
     // Dark theme text
-    text: '#FFFFFF',
-    textSecondary: '#B0B0B0',
-    textLight: '#808080',
+    text: '#E8ECF0',
+    textSecondary: '#8899AA',
+    textLight: '#5A6B7D',
     textOnPrimary: '#FFFFFF',
     textOnSecondary: '#FFFFFF',
-    textDisabled: '#606060',
+    textDisabled: '#404D5A',
 
     // Dark theme borders
-    border: '#404040',
-    borderLight: '#333333',
-    borderDark: '#606060',
-    inputBg: '#2D2D2D',
-    divider: '#404040',
+    border: '#2A3544',
+    borderLight: '#1E2936',
+    borderDark: '#3D4F62',
+    inputBg: '#1C2530',
+    divider: '#2A3544',
     overlay: 'rgba(0, 0, 0, 0.7)',
 
-    // Dark theme surfaces
-    surfaceWarm: '#36302D',
+    // Coffee specific
+    coffeeBean: '#0F1419',
 
     // Dark theme status colors
-    successLight: '#1B5E20',
+    successLight: '#1B3A2A',
     successDark: '#4CAF50',
-    errorLight: '#B71C1C',
-    errorDark: '#E53935',
-    warningLight: '#E65100',
+    errorLight: '#3A1A1A',
+    errorDark: '#EF5350',
+    warningLight: '#3A2A0A',
     warningDark: '#FF9800',
-    infoLight: '#0D47A1',
-    infoDark: '#2196F3',
+    infoLight: '#0A1A3A',
+    infoDark: '#42A5F5',
 
     // Dark theme neutrals
-    gray50: '#121212',
-    gray100: '#1E1E1E',
-    gray200: '#2D2D2D',
-    gray300: '#404040',
-    gray400: '#606060',
-    gray500: '#808080',
-    gray600: '#A0A0A0',
-    gray700: '#B0B0B0',
-    gray800: '#D0D0D0',
-    gray900: '#F0F0F0',
+    gray50: '#0A0E12',
+    gray100: '#0F1419',
+    gray200: '#1C2530',
+    gray300: '#2A3544',
+    gray400: '#3D4F62',
+    gray500: '#5A6B7D',
+    gray600: '#8899AA',
+    gray700: '#A0B0C0',
+    gray800: '#C8D4E0',
+    gray900: '#E8ECF0',
   },
 };
 

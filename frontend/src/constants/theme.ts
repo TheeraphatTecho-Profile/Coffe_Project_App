@@ -4,42 +4,42 @@
  */
 
 export const COLORS = {
-  // Primary palette
-  primary: '#4A5D23',
-  primaryDark: '#3A4A1C',
-  primaryLight: '#6B7F3A',
+  // Primary palette - Professional green
+  primary: '#2E7D32',
+  primaryDark: '#1B5E20',
+  primaryLight: '#4CAF50',
 
-  // Secondary / accent
-  secondary: '#8B6914',
-  secondaryLight: '#C49A2A',
-  golden: '#C9A84C',
+  // Secondary / accent - Warm gold
+  secondary: '#C49A2A',
+  secondaryLight: '#DABB5C',
+  golden: '#D4A84C',
 
-  // Backgrounds
-  background: '#FBF5EB',
-  backgroundDark: '#F0E8D8',
+  // Backgrounds - Clean, bright
+  background: '#F5F7FA',
+  backgroundDark: '#EEF1F5',
   surface: '#FFFFFF',
-  surfaceWarm: '#FDF8F0',
-  surfaceCard: '#FFFCF5',
+  surfaceWarm: '#F0F7F1',
+  surfaceCard: '#FFFFFF',
 
-  // Text
-  text: '#3D2314',
-  textSecondary: '#8B7355',
-  textLight: '#B8A88A',
+  // Text - High contrast
+  text: '#1A2332',
+  textSecondary: '#5A6B7D',
+  textLight: '#8E9AAD',
   textOnPrimary: '#FFFFFF',
 
   // UI elements
-  border: '#E8DFD0',
-  borderLight: '#F0E8DA',
-  inputBg: '#FDF8F0',
-  divider: '#E8DFD0',
+  border: '#E2E8F0',
+  borderLight: '#EDF2F7',
+  inputBg: '#F7FAFC',
+  divider: '#EDF2F7',
 
   // Status colors
-  error: '#C44B3F',
-  errorLight: '#FEF0EE',
-  success: '#4A8C5C',
+  error: '#D32F2F',
+  errorLight: '#FFEBEE',
+  success: '#2E7D32',
   successLight: '#E8F5E9',
-  warning: '#D4A026',
-  warningLight: '#FFF8E1',
+  warning: '#F57C00',
+  warningLight: '#FFF3E0',
 
   // Basics
   white: '#FFFFFF',
@@ -47,7 +47,7 @@ export const COLORS = {
   transparent: 'transparent',
 
   // Overlay
-  overlay: 'rgba(0,0,0,0.3)',
+  overlay: 'rgba(0,0,0,0.4)',
 } as const;
 
 export const FONTS = {
@@ -86,27 +86,15 @@ export const RADIUS = {
 
 export const SHADOWS = {
   sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
     boxShadow: '0px 1px 4px rgba(0,0,0,0.08)',
+    elevation: 2,
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
     boxShadow: '0px 2px 8px rgba(0,0,0,0.1)',
+    elevation: 4,
   },
   lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
     boxShadow: '0px 4px 12px rgba(0,0,0,0.12)',
+    elevation: 6,
   },
 } as const;
