@@ -8,6 +8,7 @@ import {
   Switch,
   TextInput,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -110,6 +111,12 @@ export const WeatherAlertSettingsScreen: React.FC = () => {
         await WeatherAlertService.updateAlertSettings(existingSettings.id, settingsData);
       } else {
         await WeatherAlertService.createAlertSettings(settingsData);
+      }
+
+      if (Platform.OS === 'web') {
+        globalThis.alert('บันทึกการตั้งค่าเรียบร้อยแล้ว');
+        navigation.goBack();
+        return;
       }
 
       Alert.alert(

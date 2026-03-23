@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -135,10 +136,16 @@ export const MaintenanceCalendarScreen: React.FC = () => {
           ]}
           onPress={() => {
             if (dayTasks.length > 0) {
-              navigation.navigate('MaintenanceDayDetail', { 
-                date: dateStr, 
-                tasks: dayTasks 
-              });
+              const summary = dayTasks.map(t => {
+                const info = getTaskTypeInfo(t.type);
+                return `• ${info.label}: ${t.title}`;
+              }).join('\n');
+              const detail = `📅 ${dateStr}\n\n${summary}`;
+              if (Platform.OS === 'web') {
+                globalThis.alert(detail);
+              } else {
+                Alert.alert(`กิจกรรมวันที่ ${dateStr}`, summary);
+              }
             } else {
               navigation.navigate('AddMaintenanceTask', { date: dateStr });
             }
@@ -227,7 +234,14 @@ export const MaintenanceCalendarScreen: React.FC = () => {
         <TouchableOpacity
           key={task.id}
           style={styles.taskCard}
-          onPress={() => navigation.navigate('MaintenanceTaskDetail', { taskId: task.id })}
+          onPress={() => {
+            const detail = `📋 ${task.title}\n📍 ${farmName}\n📅 ${task.scheduledDate}\n⏱️ ${task.estimatedDuration} ชม.\nสถานะ: ${task.status}\n📝 ${task.description || '-'}`;
+            if (Platform.OS === 'web') {
+              globalThis.alert(detail);
+            } else {
+              Alert.alert(task.title, detail);
+            }
+          }}
         >
           <View style={styles.taskHeader}>
             <View style={styles.taskTitleRow}>

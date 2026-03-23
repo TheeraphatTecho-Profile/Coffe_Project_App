@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, View, StyleSheet } from 'react-native';
+import { Animated, View, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface SkeletonLoaderProps {
@@ -20,6 +20,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   const { colors } = useTheme();
   
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const useNativeDriver = Platform.OS !== 'web';
 
   useEffect(() => {
     const shimmerAnimation = Animated.loop(
@@ -27,12 +28,12 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
         Animated.timing(animatedValue, {
           toValue: 1,
           duration: animationDuration,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
         Animated.timing(animatedValue, {
           toValue: 0,
           duration: animationDuration,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
       ])
     );
@@ -40,7 +41,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
     shimmerAnimation.start();
 
     return () => shimmerAnimation.stop();
-  }, [animatedValue, animationDuration]);
+  }, [animatedValue, animationDuration, useNativeDriver]);
 
   const translateX = animatedValue.interpolate({
     inputRange: [0, 1],

@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -173,7 +175,14 @@ export const MaintenanceDashboardScreen: React.FC = () => {
               <TouchableOpacity
                 key={task.id}
                 style={styles.taskItem}
-                onPress={() => navigation.navigate('MaintenanceTaskDetail', { taskId: task.id })}
+                onPress={() => {
+                  const detail = `📋 ${task.title}\n📍 ${getFarmName(task.farmId)}\n📅 ${formatDate(task.scheduledDate)}\n⏱️ ${task.estimatedDuration} ชม.\n📝 ${task.description || '-'}`;
+                  if (Platform.OS === 'web') {
+                    globalThis.alert(detail);
+                  } else {
+                    Alert.alert(task.title, detail);
+                  }
+                }}
               >
                 <View style={[styles.taskIcon, { backgroundColor: typeInfo.color + '20' }]}>
                   <Ionicons name={typeInfo.icon as any} size={20} color={typeInfo.color} />
@@ -214,7 +223,14 @@ export const MaintenanceDashboardScreen: React.FC = () => {
             <TouchableOpacity
               key={task.id}
               style={styles.overdueTaskItem}
-              onPress={() => navigation.navigate('MaintenanceTaskDetail', { taskId: task.id })}
+              onPress={() => {
+                const detail = `📋 ${task.title}\n📍 ${getFarmName(task.farmId)}\n📅 ${formatDate(task.scheduledDate)}\n⚠️ เลยกำหนด ${daysOverdue} วัน\n📝 ${task.description || '-'}`;
+                if (Platform.OS === 'web') {
+                  globalThis.alert(detail);
+                } else {
+                  Alert.alert('⚠️ ' + task.title, detail);
+                }
+              }}
             >
               <View style={[styles.taskIcon, { backgroundColor: colors.error + '20' }]}>
                 <Ionicons name={typeInfo.icon as any} size={20} color={colors.error} />

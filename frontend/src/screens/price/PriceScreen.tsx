@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { FarmService, HarvestService } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
 
 export const PriceScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [farmStats, setFarmStats] = useState<any[]>([]);
@@ -24,7 +26,7 @@ export const PriceScreen: React.FC = () => {
 
       setFarmStats(farms.map((f: any) => ({
         name: f.name || 'สวน',
-        yield: f.area_rai || 0,
+        yield: f.area || 0,
         treeCount: f.tree_count || 0,
       })));
 
@@ -123,6 +125,25 @@ export const PriceScreen: React.FC = () => {
             สรุปภาพรวมผลผลิตและรายได้จากฐานข้อมูลจริงของคุณ
           </Text>
 
+          <View style={styles.actionGrid}>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('PriceComparison')}
+            >
+              <Ionicons name="git-compare-outline" size={22} color={COLORS.primary} />
+              <Text style={styles.actionCardTitle}>เปรียบเทียบราคา</Text>
+              <Text style={styles.actionCardText}>ดูแนวโน้มตลาดและผู้ซื้อที่ให้ราคาดีที่สุด</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('ProfitCalculator')}
+            >
+              <Ionicons name="calculator-outline" size={22} color={COLORS.secondary} />
+              <Text style={styles.actionCardTitle}>คำนวณกำไร</Text>
+              <Text style={styles.actionCardText}>ประเมินรายได้ ต้นทุน และกำไรจากผลผลิตของคุณ</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Total yield stat — real data */}
           <View style={styles.yieldStatCard}>
             <Text style={styles.yieldStatLabel}>ผลผลิตรวมสะสม</Text>
@@ -211,6 +232,31 @@ const styles = StyleSheet.create({
 
   title: { fontSize: FONTS.sizes.xxl, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.md, lineHeight: 34 },
   subtitle: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, lineHeight: 20, marginBottom: SPACING.xxl },
+
+  actionGrid: {
+    gap: SPACING.md,
+    marginBottom: SPACING.xl,
+  },
+  actionCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    ...SHADOWS.sm,
+  },
+  actionCardTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  actionCardText: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
 
   // Yield stat
   yieldStatCard: {

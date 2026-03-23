@@ -12,7 +12,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AnimatedButton } from '../../components/AnimatedButton';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { Logo } from '../../components/Logo';
 import { CostService, Cost, COST_CATEGORIES } from '../../lib/costService';
 import { HarvestService } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
@@ -140,8 +139,10 @@ export const CostAnalyticsScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Logo size="small" showText={false} />
-            <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerBrand}>วิเคราะห์ต้นทุน</Text>
           </View>
           <TouchableOpacity style={styles.addButton}>
             <Ionicons name="notifications-outline" size={20} color={colors.text} />

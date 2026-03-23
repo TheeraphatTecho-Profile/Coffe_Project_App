@@ -198,6 +198,23 @@ export class MaintenanceService {
     }
   }
 
+  static async deleteTasksByFarm(farmId: string): Promise<void> {
+    try {
+      const q = query(
+        collection(db, this.collection),
+        where('farmId', '==', farmId)
+      );
+      const querySnapshot = await getDocs(q);
+      const deletePromises = querySnapshot.docs.map(docSnap => 
+        deleteDoc(doc(db, this.collection, docSnap.id))
+      );
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error('Error deleting tasks by farm:', error);
+      throw error;
+    }
+  }
+
   static async getTask(userId: string, taskId: string): Promise<MaintenanceTask | null> {
     try {
       const docRef = doc(db, this.collection, taskId);

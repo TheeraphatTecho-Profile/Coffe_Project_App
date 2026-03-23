@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AnimatedButton } from '../../components/AnimatedButton';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { Logo } from '../../components/Logo';
 import { WeatherAlertService, WeatherAlert, LOEI_WEATHER_THRESHOLDS } from '../../lib/weatherAlertService';
 import { useAuth } from '../../context/AuthContext';
 import { Farm, FarmService } from '../../lib/firebaseDb';
@@ -121,6 +121,25 @@ export const WeatherAlertsScreen: React.FC = () => {
   };
 
   const handleDeleteAlert = async (alertId: string) => {
+    if (Platform.OS === 'web') {
+      const confirmed = typeof globalThis.confirm === 'function'
+        ? globalThis.confirm('คุณต้องการลบการแจ้งเตือนนี้ใช่หรือไม่?')
+        : true;
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await WeatherAlertService.deleteAlert(alertId);
+        await loadData();
+      } catch (error) {
+        globalThis.alert('ไม่สามารถลบการแจ้งเตือนได้');
+      }
+
+      return;
+    }
+
     Alert.alert(
       'ยืนยันการลบ',
       'คุณต้องการลบการแจ้งเตือนนี้ใช่หรือไม่?',
@@ -168,9 +187,15 @@ export const WeatherAlertsScreen: React.FC = () => {
           if (!alert.isRead && alert.id) {
             handleMarkAsRead(alert.id);
           }
-          if (alert.id) {
-            navigation.navigate('WeatherAlertDetail', { alertId: alert.id });
+
+          const alertDetails = `${alert.description}\n\nเวลา: ${formatDateTime(alert.expectedTime)}\nระยะเวลา: ${alert.expectedDuration} ชม.\nพื้นที่: ${alert.affectedArea}`;
+
+          if (Platform.OS === 'web') {
+            globalThis.alert(`${alert.title}\n\n${alertDetails}`);
+            return;
           }
+
+          Alert.alert(alert.title, alertDetails);
         }}
       >
         <View style={styles.alertHeader}>
@@ -281,8 +306,10 @@ export const WeatherAlertsScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Logo size="small" showText={false} />
-            <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerBrand}>การแจ้งเตือนอากาศ</Text>
           </View>
           <TouchableOpacity style={styles.addButton}>
             <Ionicons name="notifications-outline" size={20} color={colors.text} />

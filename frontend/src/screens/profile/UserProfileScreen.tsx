@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SocialService, UserProfile } from '../../lib/socialService';
 import { CommunityService, CommunityPost } from '../../lib/community/communityService';
+import { MessagingService } from '../../lib/messagingService';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 
@@ -58,6 +59,32 @@ export const UserProfileScreen: React.FC<Props> = ({ navigation, route }) => {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenChat = async () => {
+    if (!user || !profile || isOwnProfile || !targetUserId) return;
+
+    try {
+      const conversationId = await MessagingService.getOrCreateConversation(
+        user.uid,
+        user.displayName || user.email?.split('@')[0] || 'Unknown',
+        user.photoURL || undefined,
+        targetUserId,
+        profile.display_name || profile.name || 'Unknown User',
+        profile.avatar || undefined
+      );
+
+      navigation.navigate('Chat', {
+        conversationId,
+        otherUser: {
+          id: targetUserId,
+          name: profile.display_name || profile.name || 'Unknown User',
+          avatar: profile.avatar || null,
+        },
+      });
+    } catch (error) {
+      console.error('Error opening chat:', error);
     }
   };
 
@@ -165,10 +192,7 @@ export const UserProfileScreen: React.FC<Props> = ({ navigation, route }) => {
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.messageButton}
-            onPress={() => navigation.navigate('Conversations', { 
-              screen: 'Chat', 
-              params: { userId: targetUserId, userName: profile?.display_name } 
-            })}
+            onPress={handleOpenChat}
           >
             <Ionicons name="chatbubbles-outline" size={18} color={COLORS.primary} />
             <Text style={styles.messageButtonText}>ข้อความ</Text>

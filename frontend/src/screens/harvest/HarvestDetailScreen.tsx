@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { HarvestStackParamList } from '../../types/navigation';
 import { Button } from '../../components/Button';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 import { HarvestService, Harvest } from '../../lib/firebaseDb';
 
-type Props = {
-  navigation: NativeStackNavigationProp<HarvestStackParamList, 'HarvestDetail'>;
-  route: RouteProp<{ params: { harvestId: string } }, 'params'>;
-};
+type Props = NativeStackScreenProps<HarvestStackParamList, 'HarvestDetail'>;
 
 export const HarvestDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const { harvestId } = route.params;

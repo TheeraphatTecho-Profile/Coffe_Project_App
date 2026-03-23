@@ -107,16 +107,16 @@ export const NotificationScreen: React.FC<Props> = ({ navigation }) => {
         break;
       case 'follow':
         if (notification.data.user_id) {
-          navigation.navigate('ProfileTab');
+          navigation.navigate('UserProfile', { userId: notification.data.user_id });
         }
         break;
       case 'harvest':
         if (notification.data.harvest_id) {
-          navigation.navigate('HarvestTab');
+          navigation.navigate('Main', { screen: 'HarvestTab' });
         }
         break;
       case 'price':
-        navigation.navigate('PriceTab');
+        navigation.navigate('Main', { screen: 'PriceTab' });
         break;
       default:
         break;

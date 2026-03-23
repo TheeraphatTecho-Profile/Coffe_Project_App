@@ -19,6 +19,11 @@ interface Farm {
   name: string;
 }
 
+const SHIFT_OPTIONS = [
+  { value: 'morning', label: 'เช้า' },
+  { value: 'afternoon', label: 'บ่าย' },
+] as const;
+
 export const AddHarvestScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuth();
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -27,7 +32,7 @@ export const AddHarvestScreen: React.FC<Props> = ({ navigation }) => {
   const [variety, setVariety] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [income, setIncome] = useState('');
-  const [shift, setShift] = useState<'เช้า' | 'เย็น'>('เช้า');
+  const [shift, setShift] = useState<'morning' | 'afternoon'>('morning');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -149,18 +154,15 @@ export const AddHarvestScreen: React.FC<Props> = ({ navigation }) => {
           {/* Shift */}
           <Text style={styles.fieldLabel}>ช่วงเวลา</Text>
           <View style={styles.shiftRow}>
-            <TouchableOpacity
-              style={[styles.shiftChip, shift === 'เช้า' && styles.shiftChipSelected]}
-              onPress={() => setShift('เช้า')}
-            >
-              <Text style={[styles.shiftText, shift === 'เช้า' && styles.shiftTextSelected]}>เช้า</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.shiftChip, shift === 'เย็น' && styles.shiftChipSelected]}
-              onPress={() => setShift('เย็น')}
-            >
-              <Text style={[styles.shiftText, shift === 'เย็น' && styles.shiftTextSelected]}>เย็น</Text>
-            </TouchableOpacity>
+            {SHIFT_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.shiftChip, shift === option.value && styles.shiftChipSelected]}
+                onPress={() => setShift(option.value)}
+              >
+                <Text style={[styles.shiftText, shift === option.value && styles.shiftTextSelected]}>{option.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* Notes */}

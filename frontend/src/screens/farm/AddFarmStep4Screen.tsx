@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,7 +22,7 @@ export const AddFarmStep4Screen: React.FC<Props> = ({ navigation, route }) => {
   const { user } = useAuth();
   const [variety, setVariety] = useState<CoffeeVariety>('arabica');
   const [treeCount, setTreeCount] = useState('');
-  const [plantingYear, setPlantingYear] = useState('2567');
+  const [plantingYear, setPlantingYear] = useState(String(new Date().getFullYear() + 543));
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -44,17 +44,35 @@ export const AddFarmStep4Screen: React.FC<Props> = ({ navigation, route }) => {
         area: farmData.area,
         soil_type: farmData.soil_type || null,
         water_source: farmData.water_source || null,
+        water_detail: farmData.water_detail || null,
+        irrigations: farmData.irrigations || [],
         province: farmData.province || 'เลย',
         district: farmData.district || null,
+        sub_district: farmData.sub_district || null,
         altitude: farmData.altitude || null,
+        latitude: farmData.latitude || null,
+        longitude: farmData.longitude || null,
         variety: variety === 'arabica' ? 'Arabica' : variety === 'robusta' ? 'Robusta' : 'อื่นๆ',
         tree_count: treeCount ? parseInt(treeCount) : null,
         planting_year: plantingYear ? parseInt(plantingYear) : null,
         notes: notes || null,
       });
 
+      if (Platform.OS === 'web') {
+        globalThis.alert('บันทึกข้อมูลสวนเรียบร้อยแล้ว');
+        navigation.popToTop();
+        navigation.getParent()?.navigate('HomeTab');
+        return;
+      }
+
       Alert.alert('สำเร็จ', 'บันทึกข้อมูลสวนเรียบร้อยแล้ว', [
-        { text: 'ตกลง', onPress: () => navigation.popToTop() }
+        {
+          text: 'ตกลง',
+          onPress: () => {
+            navigation.popToTop();
+            navigation.getParent()?.navigate('HomeTab');
+          },
+        }
       ]);
     } catch (err: any) {
       console.error('Save farm error:', err);

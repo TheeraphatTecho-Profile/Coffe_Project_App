@@ -29,6 +29,15 @@ service cloud.firestore {
       request.resource.data.user_id == request.auth.uid;
     }
     
+    // Helper function to validate farm update (partial update safe)
+    function isValidFarmUpdate() {
+      return request.resource.data.user_id == request.auth.uid &&
+      request.resource.data.name is string &&
+      request.resource.data.name.size() > 0 &&
+      request.resource.data.area is number &&
+      request.resource.data.area >= 0;
+    }
+    
     // Helper function to validate harvest data
     function isValidHarvestData() {
       return request.resource.data.keys().hasAll([
@@ -36,7 +45,7 @@ service cloud.firestore {
       ]) &&
       request.resource.data.farm_id is string &&
       request.resource.data.farm_id.size() > 0 &&
-      request.resource.data.harvest_date is timestamp &&
+      request.resource.data.harvest_date is string &&
       request.resource.data.weight_kg is number &&
       request.resource.data.weight_kg > 0 &&
       request.resource.data.weight_kg <= 10000 &&
@@ -48,30 +57,28 @@ service cloud.firestore {
       request.resource.data.user_id == request.auth.uid;
     }
     
+    // Helper function to validate harvest update (partial update safe)
+    function isValidHarvestUpdate() {
+      return request.resource.data.user_id == request.auth.uid &&
+      request.resource.data.farm_id is string;
+    }
+    
     // Farms collection - users can only access their own farms
     match /farms/{farmId} {
       allow read: if isAuthenticated() && isOwner(resource.data.user_id);
       allow create: if isAuthenticated() && isValidFarmData();
-      allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidFarmData();
+      allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidFarmUpdate();
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
-      
-      // Indexes for better performance
-      ensure index on (user_id, created_at);
-      ensure index on (province, created_at);
     }
     
     // Harvests collection - users can only access their own harvests
     match /harvests/{harvestId} {
       allow read: if isAuthenticated() && isOwner(resource.data.user_id);
       allow create: if isAuthenticated() && isValidHarvestData();
-      allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidHarvestData();
+      allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidHarvestUpdate();
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
-      
-      // Indexes for better performance
-      ensure index on (user_id, harvest_date);
-      ensure index on (farm_id, harvest_date);
     }
     
     // Users collection - restricted access
@@ -155,6 +162,14 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
+
+    match /weather_alert_settings/{settingsId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow list: if isAuthenticated();
+    }
     
     match /farm_weather_profiles/{profileId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
@@ -183,6 +198,14 @@ service cloud.firestore {
     // ========== MARKET INTELLIGENCE ==========
     
     match /market_buyers/{buyerId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow list: if isAuthenticated();
+    }
+
+    match /buyers/{buyerId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && isOwner(resource.data.userId);

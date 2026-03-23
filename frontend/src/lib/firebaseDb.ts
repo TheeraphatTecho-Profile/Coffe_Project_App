@@ -11,8 +11,11 @@ import {
   orderBy,
   serverTimestamp,
   Timestamp,
+  documentId,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { CostService } from './costService';
+import { MaintenanceService } from './maintenanceService';
 
 const farmsRef = collection(db, 'farms');
 const harvestsRef = collection(db, 'harvests');
@@ -23,9 +26,14 @@ export interface Farm {
   area: number;
   soil_type: string | null;
   water_source: string | null;
+  water_detail?: string | null;
+  irrigations?: string[];
   province: string;
   district: string | null;
+  sub_district?: string | null;
   altitude: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   variety: string | null;
   tree_count: number | null;
   planting_year: number | null;
@@ -88,9 +96,22 @@ export const FarmService = {
   },
 
   /**
-   * Delete a farm by ID.
+   * Delete a farm by ID and all its related records (Cascade Delete).
    */
   async delete(id: string): Promise<void> {
+    // 1. Find all related harvests
+    const harvestsQ = query(harvestsRef, where('farm_id', '==', id));
+    const harvestsSnap = await getDocs(harvestsQ);
+    const deleteHarvests = harvestsSnap.docs.map(h => deleteDoc(doc(db, 'harvests', h.id)));
+    
+    // 2. Cascade delete costs, maintenance tasks, and harvests
+    await Promise.all([
+      ...deleteHarvests,
+      CostService.deleteCostsByFarm(id),
+      MaintenanceService.deleteTasksByFarm(id)
+    ]);
+
+    // 3. Delete the farm itself
     await deleteDoc(doc(db, 'farms', id));
   },
 
@@ -117,11 +138,16 @@ export const HarvestService = {
     const farmIds = [...new Set(harvestDocs.map(h => h.farm_id).filter(Boolean))];
     const farms: Record<string, string> = {};
 
-    for (const farmId of farmIds) {
-      const farmSnap = await getDoc(doc(db, 'farms', farmId));
-      const farmData = farmSnap.data();
-      if (farmSnap.exists() && farmData) {
-        farms[farmId] = farmData.name;
+    if (farmIds.length > 0) {
+      // Fetch farms in batches of 10 (Firestore 'in' query limit)
+      const chunkSize = 10;
+      for (let i = 0; i < farmIds.length; i += chunkSize) {
+        const chunk = farmIds.slice(i, i + chunkSize);
+        const farmsQ = query(farmsRef, where(documentId(), 'in', chunk));
+        const farmsSnap = await getDocs(farmsQ);
+        farmsSnap.forEach(fSnap => {
+          farms[fSnap.id] = fSnap.data().name;
+        });
       }
     }
 

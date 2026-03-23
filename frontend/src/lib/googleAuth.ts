@@ -22,21 +22,10 @@ import { auth } from './firebase';
 export async function handleGoogleRedirectResult(): Promise<User | null> {
   if (Platform.OS !== 'web') return null;
   try {
-    console.log('[GoogleAuth] handleGoogleRedirectResult:start', {
-      href: typeof window !== 'undefined' ? window.location.href : null,
-      currentUser: auth.currentUser?.email ?? null,
-    });
     const result = await getRedirectResult(auth);
     if (result) {
-      console.log('[GoogleAuth] handleGoogleRedirectResult:result', {
-        resultUser: result.user.email ?? null,
-        currentUser: auth.currentUser?.email ?? null,
-      });
       return result.user;
     }
-    console.log('[GoogleAuth] handleGoogleRedirectResult:no-result', {
-      currentUser: auth.currentUser?.email ?? null,
-    });
     return auth.currentUser;
   } catch (err) {
     console.error('[GoogleAuth] handleGoogleRedirectResult:error', err);
@@ -84,9 +73,6 @@ async function signInWithGoogleWeb(): Promise<{ error: Error | null }> {
 
   if (isLocalhost) {
     try {
-      console.log('[GoogleAuth] signInWithGoogleWeb:popup', {
-        href: window.location.href,
-      });
       await signInWithPopup(auth, provider);
       return { error: null };
     } catch (err) {
@@ -101,9 +87,6 @@ async function signInWithGoogleWeb(): Promise<{ error: Error | null }> {
     }
   }
 
-  console.log('[GoogleAuth] signInWithGoogleWeb:redirect', {
-    href: typeof window !== 'undefined' ? window.location.href : null,
-  });
   await signInWithRedirect(auth, provider);
   // Browser will redirect away — this line won't execute until return
   return { error: null };

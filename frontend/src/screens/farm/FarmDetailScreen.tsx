@@ -11,7 +11,7 @@ import { FarmService, Farm } from '../../lib/firebaseDb';
 
 type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'FarmDetail'>;
-  route: RouteProp<{ params: { farmId: string } }, 'params'>;
+  route: RouteProp<FarmStackParamList, 'FarmDetail'>;
 };
 
 export const FarmDetailScreen: React.FC<Props> = ({ navigation, route }) => {

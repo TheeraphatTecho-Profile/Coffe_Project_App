@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CommunityStackParamList } from '../types/navigation';
 import { CommunityScreen } from '../screens/community/CommunityScreen';
@@ -19,7 +20,7 @@ export const CommunityStack: React.FC = () => {
       <Stack.Screen 
         name="CreatePost" 
         component={CreatePostScreen}
-        options={{ presentation: 'modal' }}
+        options={{ presentation: Platform.OS === 'web' ? 'card' : 'modal' }}
       />
       <Stack.Screen name="PostDetail" component={PostDetailScreen} />
       <Stack.Screen name="Groups" component={GroupsScreen} />

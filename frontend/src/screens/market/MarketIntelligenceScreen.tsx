@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AnimatedButton } from '../../components/AnimatedButton';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { Logo } from '../../components/Logo';
 import { MarketService, MarketInsight, LOEI_MARKET_REGIONS } from '../../lib/marketService';
 import { useAuth } from '../../context/AuthContext';
 
@@ -103,7 +103,14 @@ export const MarketIntelligenceScreen: React.FC = () => {
       <TouchableOpacity
         key={insight.id}
         style={styles.insightCard}
-        onPress={() => navigation.navigate('MarketInsightDetail', { insightId: insight.id })}
+        onPress={() => {
+          if (Platform.OS === 'web') {
+            globalThis.alert(`${insight.title}\n\n${insight.content}`);
+            return;
+          }
+
+          Alert.alert(insight.title, insight.content);
+        }}
       >
         <View style={styles.insightHeader}>
           <View style={styles.insightTitleRow}>
@@ -256,8 +263,10 @@ export const MarketIntelligenceScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Logo size="small" showText={false} />
-            <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerBrand}>ข่าวสารตลาด</Text>
           </View>
           <TouchableOpacity style={styles.addButton}>
             <Ionicons name="notifications-outline" size={20} color={colors.text} />
@@ -314,7 +323,7 @@ export const MarketIntelligenceScreen: React.FC = () => {
             />
             <AnimatedButton
               title="ติดตามราคา"
-              onPress={() => navigation.navigate('PriceTracking')}
+              onPress={() => navigation.navigate('PriceComparison')}
               variant="outline"
               size="large"
               icon={<Ionicons name="trending-up-outline" size={20} color={colors.secondary} />}

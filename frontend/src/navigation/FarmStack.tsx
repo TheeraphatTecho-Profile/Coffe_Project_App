@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FarmStackParamList } from '../types/navigation';
 import { FarmListScreen } from '../screens/farm/FarmListScreen';
+import { FarmDetailScreen } from '../screens/farm/FarmDetailScreen';
 import { AddFarmStep1Screen } from '../screens/farm/AddFarmStep1Screen';
 import { AddFarmStep2Screen } from '../screens/farm/AddFarmStep2Screen';
 import { AddFarmStep3Screen } from '../screens/farm/AddFarmStep3Screen';
@@ -11,7 +12,7 @@ const Stack = createNativeStackNavigator<FarmStackParamList>();
 
 /**
  * Farm management stack navigator.
- * Handles farm list and the 4-step add farm flow.
+ * Handles farm list, farm detail, and the 4-step add farm flow.
  */
 export const FarmStack: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ export const FarmStack: React.FC = () => {
       }}
     >
       <Stack.Screen name="FarmList" component={FarmListScreen} />
+      <Stack.Screen name="FarmDetail" component={FarmDetailScreen as any} />
       <Stack.Screen name="AddFarmStep1" component={AddFarmStep1Screen} />
       <Stack.Screen name="AddFarmStep2" component={AddFarmStep2Screen} />
       <Stack.Screen name="AddFarmStep3" component={AddFarmStep3Screen} />

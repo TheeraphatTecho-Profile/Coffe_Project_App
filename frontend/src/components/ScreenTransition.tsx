@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, View, StyleSheet } from 'react-native';
+import { Animated, View, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 
 type TransitionType = 'fade' | 'slideInRight' | 'slideInLeft' | 'slideInUp' | 'slideInDown';
@@ -21,6 +21,7 @@ export const ScreenTransition: React.FC<ScreenTransitionProps> = ({
 }) => {
   const { animations } = useTheme();
   const animatedValue = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  const useNativeDriver = Platform.OS !== 'web';
 
   useEffect(() => {
     if (visible) {
@@ -30,35 +31,35 @@ export const ScreenTransition: React.FC<ScreenTransitionProps> = ({
           Animated.timing(animatedValue, {
             toValue: 1,
             duration,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInRight':
           Animated.timing(animatedValue, {
             toValue: 1,
             duration,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInLeft':
           Animated.timing(animatedValue, {
             toValue: 1,
             duration,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInUp':
           Animated.timing(animatedValue, {
             toValue: 1,
             duration,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInDown':
           Animated.timing(animatedValue, {
             toValue: 1,
             duration,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
       }
@@ -69,40 +70,40 @@ export const ScreenTransition: React.FC<ScreenTransitionProps> = ({
           Animated.timing(animatedValue, {
             toValue: 0,
             duration: duration / 2,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInRight':
           Animated.timing(animatedValue, {
             toValue: 0,
             duration: duration / 2,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInLeft':
           Animated.timing(animatedValue, {
             toValue: 0,
             duration: duration / 2,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInUp':
           Animated.timing(animatedValue, {
             toValue: 0,
             duration: duration / 2,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
         case 'slideInDown':
           Animated.timing(animatedValue, {
             toValue: 0,
             duration: duration / 2,
-            useNativeDriver: true,
+            useNativeDriver,
           }).start(onAnimationComplete);
           break;
       }
     }
-  }, [visible, type, duration, animatedValue, onAnimationComplete]);
+  }, [visible, type, duration, animatedValue, onAnimationComplete, useNativeDriver]);
 
   const getAnimationStyle = () => {
     switch (type) {
@@ -173,6 +174,7 @@ export const ScreenTransition: React.FC<ScreenTransitionProps> = ({
 // Hook for staggered list animations
 export const useStaggeredAnimation = (itemCount: number, delay = 100) => {
   const animations = useRef<Animated.Value[]>([]).current;
+  const useNativeDriver = Platform.OS !== 'web';
 
   useEffect(() => {
     // Initialize animations
@@ -187,7 +189,7 @@ export const useStaggeredAnimation = (itemCount: number, delay = 100) => {
         toValue: 1,
         duration: 300,
         delay: index * delay,
-        useNativeDriver: true,
+        useNativeDriver,
       })
     );
 
@@ -199,7 +201,7 @@ export const useStaggeredAnimation = (itemCount: number, delay = 100) => {
       Animated.timing(anim, {
         toValue: 0,
         duration: 0,
-        useNativeDriver: true,
+        useNativeDriver,
       })
     );
 

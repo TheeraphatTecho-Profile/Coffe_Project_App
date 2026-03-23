@@ -42,6 +42,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     Animated.spring(scaleValue, {
       toValue: 0.95,
       ...animations.spring,
+      useNativeDriver: false,
     }).start();
   };
 
@@ -49,6 +50,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     Animated.spring(scaleValue, {
       toValue: 1,
       ...animations.spring,
+      useNativeDriver: false,
     }).start();
   };
 

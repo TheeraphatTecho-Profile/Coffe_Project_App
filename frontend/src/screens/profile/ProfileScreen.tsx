@@ -88,8 +88,8 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const GENERAL_SETTINGS: MenuItem[] = [
-    { icon: 'person-outline', label: 'แก้ไขโปรไฟล์', onPress: () => { /* TODO: navigate to EditProfile */ } },
-    { icon: 'notifications-outline', label: 'การแจ้งเตือน', onPress: () => { /* TODO: navigate to Notifications */ } },
+    { icon: 'person-outline', label: 'แก้ไขโปรไฟล์', onPress: () => { try { navigation.navigate('Settings', { screen: 'EditProfile' }); } catch { /* noop */ } } },
+    { icon: 'notifications-outline', label: 'การแจ้งเตือน', onPress: () => { try { navigation.navigate('Notifications'); } catch { /* noop */ } } },
     { icon: 'settings-outline', label: 'ตั้งค่าแอป', onPress: () => { try { navigation.navigate('Settings', { screen: 'SettingsMain' }); } catch { /* noop */ } } },
   ];
 

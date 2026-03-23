@@ -116,8 +116,10 @@ export const PriceComparisonScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Ionicons name="trending-up" size={22} color={COLORS.text} />
-            <Text style={styles.headerBrand}> ตลาดกาแฟเลย</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerBrand}>เปรียบเทียบราคา</Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.addButton}>

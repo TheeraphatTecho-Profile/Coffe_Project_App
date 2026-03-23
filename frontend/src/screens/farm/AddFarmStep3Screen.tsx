@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { FarmStackParamList, FarmData } from '../../types/navigation';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
@@ -26,17 +27,53 @@ type Altitude = 'low' | 'medium' | 'high' | null;
  * Not shown in mockup but implied by 4-step flow.
  */
 export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
-  const [altitude, setAltitude] = useState<Altitude>(null);
-  const [province, setProvince] = useState('เลย');
-  const [district, setDistrict] = useState('');
-  const [subDistrict, setSubDistrict] = useState('');
+  const [altitude, setAltitude] = useState<Altitude>(() => {
+    const existingAltitude = route.params.farmData.altitude;
+    if (!existingAltitude) return null;
+    if (existingAltitude >= 900) return 'high';
+    if (existingAltitude >= 600) return 'medium';
+    return 'low';
+  });
+  const [province, setProvince] = useState(route.params.farmData.province || 'เลย');
+  const [district, setDistrict] = useState(route.params.farmData.district || '');
+  const [subDistrict, setSubDistrict] = useState(route.params.farmData.sub_district || '');
+  const [latitude, setLatitude] = useState(route.params.farmData.latitude?.toString() || '');
+  const [longitude, setLongitude] = useState(route.params.farmData.longitude?.toString() || '');
+  const [isFetchingGPS, setIsFetchingGPS] = useState(false);
+
+  const fetchCurrentLocation = async () => {
+    setIsFetchingGPS(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        globalThis.alert?.('Permission to access location was denied');
+        setIsFetchingGPS(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setLatitude(location.coords.latitude.toFixed(6));
+      setLongitude(location.coords.longitude.toFixed(6));
+    } catch (error) {
+      console.error('Error fetching location:', error);
+      globalThis.alert?.('Could not fetch location. Please enter manually.');
+    } finally {
+      setIsFetchingGPS(false);
+    }
+  };
 
   const handleNext = () => {
     const farmData: Partial<FarmData> = {
       ...route.params.farmData,
       province,
       district: district.trim() || null,
+      sub_district: subDistrict.trim() || null,
       altitude: altitude ? (altitude === 'low' ? 300 : altitude === 'medium' ? 600 : 900) : null,
+      latitude: latitude.trim() ? parseFloat(latitude) || null : null,
+      longitude: longitude.trim() ? parseFloat(longitude) || null : null,
     };
     navigation.navigate('AddFarmStep4', { farmData });
   };
@@ -90,6 +127,46 @@ export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
             onChangeText={setSubDistrict}
           />
 
+          <View style={styles.coordinatesCard}>
+            <View style={styles.coordinatesHeader}>
+              <Ionicons name="navigate-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.coordinatesTitle}>พิกัด GPS ของสวน</Text>
+            </View>
+            <Text style={styles.coordinatesSubtitle}>
+              คุณสามารถกดปุ่มด้านล่างเพื่อดึงพิกัดปัจจุบัน หรือกรอกแบบ manual
+            </Text>
+            
+            <Button
+              title={isFetchingGPS ? "กำลังดึงพิกัด..." : "ดึงพิกัดปัจจุบัน (GPS)"}
+              onPress={fetchCurrentLocation}
+              disabled={isFetchingGPS}
+              variant="outline"
+              icon={<Ionicons name="location" size={18} color={isFetchingGPS ? COLORS.textLight : COLORS.primary} />}
+              style={styles.gpsButton}
+            />
+
+            <View style={styles.coordinatesRow}>
+              <View style={styles.coordinateField}>
+                <Input
+                  label="Latitude"
+                  placeholder="เช่น 17.4905"
+                  value={latitude}
+                  onChangeText={setLatitude}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={styles.coordinateField}>
+                <Input
+                  label="Longitude"
+                  placeholder="เช่น 101.7211"
+                  value={longitude}
+                  onChangeText={setLongitude}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+          </View>
+
           {/* Altitude selection */}
           <Text style={styles.sectionTitle}>
             <Ionicons name="trending-up" size={18} color={COLORS.textSecondary} />
@@ -130,7 +207,7 @@ export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.infoNote}>
             <Ionicons name="navigate-outline" size={18} color={COLORS.primary} />
             <Text style={styles.infoText}>
-              คุณสามารถเพิ่มพิกัด GPS ได้ภายหลังจากหน้าตั้งค่าสวน เพื่อระบุตำแหน่งที่แน่นอน
+              ตอนนี้ระบบรองรับการบันทึกพิกัดแบบ manual แล้ว หากยังไม่มีพิกัดสามารถข้ามไปก่อนได้
             </Text>
           </View>
         </ScrollView>
@@ -259,6 +336,41 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.sm,
     color: COLORS.textSecondary,
     lineHeight: 20,
+  },
+  coordinatesCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    marginBottom: SPACING.xl,
+  },
+  coordinatesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  coordinatesTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  coordinatesSubtitle: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: SPACING.md,
+  },
+  gpsButton: {
+    marginBottom: SPACING.lg,
+  },
+  coordinatesRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  coordinateField: {
+    flex: 1,
   },
   bottomBar: {
     flexDirection: 'row',

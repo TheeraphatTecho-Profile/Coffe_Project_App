@@ -2,6 +2,12 @@
  * Navigation type definitions for the Coffee Farm app.
  */
 
+ interface ChatUser {
+  id: string;
+  name: string;
+  avatar?: string | null;
+ }
+
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
@@ -38,7 +44,10 @@ export interface FarmData {
   irrigations?: string[];
   province: string;
   district: string | null;
+  sub_district?: string | null;
   altitude: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   variety: string | null;
   tree_count: number | null;
   planting_year: number | null;
@@ -70,6 +79,15 @@ export type RootStackParamList = {
   Main: undefined;
   Settings: undefined;
   Community: undefined;
+  Notifications: undefined;
+  UserProfile: { userId?: string };
+  Followers: { userId?: string };
+  Following: { userId?: string };
+  SearchUsers: undefined;
+  Conversations: undefined;
+  Chat: { conversationId: string; otherUser: ChatUser };
+  PriceComparison: undefined;
+  ProfitCalculator: undefined;
   // Cost tracking
   CostList: { farmId?: string };
   AddCost: { farmId?: string; costId?: string };

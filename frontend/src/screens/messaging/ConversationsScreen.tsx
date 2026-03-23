@@ -173,7 +173,7 @@ export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ข้อความ</Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate('NewMessage')}
+          onPress={() => navigation.navigate('SearchUsers')}
         >
           <Ionicons name="create-outline" size={24} color={COLORS.primary} />
         </TouchableOpacity>

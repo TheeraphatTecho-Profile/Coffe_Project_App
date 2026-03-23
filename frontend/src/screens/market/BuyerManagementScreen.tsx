@@ -8,13 +8,13 @@ import {
   TextInput,
   Alert,
   Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AnimatedButton } from '../../components/AnimatedButton';
-import { Logo } from '../../components/Logo';
 import { MarketService, Buyer, COFFEE_GRADES, CERTIFICATIONS } from '../../lib/marketService';
 import { useAuth } from '../../context/AuthContext';
 
@@ -111,6 +111,57 @@ export const BuyerManagementScreen: React.FC = () => {
     }
   };
 
+  const blurActiveElement = () => {
+    if (Platform.OS !== 'web') return;
+
+    if (typeof document === 'undefined') return;
+
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
+  };
+
+  const closeAddModal = () => {
+    blurActiveElement();
+    setShowAddModal(false);
+    setEditingBuyer(null);
+    resetForm();
+  };
+
+  const openAddModal = (buyer?: Buyer) => {
+    blurActiveElement();
+
+    if (buyer) {
+      setEditingBuyer(buyer);
+      setFormData({
+        name: buyer.name,
+        company: buyer.company,
+        type: buyer.type,
+        contactPerson: buyer.contactPerson,
+        phone: buyer.phone,
+        email: buyer.email,
+        address: buyer.address,
+        province: buyer.province,
+        district: buyer.district,
+        postalCode: buyer.postalCode,
+        website: buyer.website || '',
+        lineId: buyer.lineId || '',
+        facebook: buyer.facebook || '',
+        specialties: buyer.specialties,
+        priceRange: buyer.priceRange,
+        volumeCapacity: buyer.volumeCapacity,
+        reliability: buyer.reliability,
+        notes: buyer.notes || '',
+      });
+    } else {
+      setEditingBuyer(null);
+      resetForm();
+    }
+
+    setShowAddModal(true);
+  };
+
   const handleSaveBuyer = async () => {
     if (!user?.uid) return;
     
@@ -147,10 +198,18 @@ export const BuyerManagementScreen: React.FC = () => {
         await MarketService.createBuyer(buyerData);
       }
 
+      blurActiveElement();
       setShowAddModal(false);
       setEditingBuyer(null);
       resetForm();
       await loadBuyers();
+
+      if (Platform.OS === 'web') {
+        globalThis.alert(
+          editingBuyer ? 'แก้ไขข้อมูลผู้ซื้อเรียบร้อยแล้ว' : 'เพิ่มผู้ซื้อใหม่เรียบร้อยแล้ว'
+        );
+        return;
+      }
       
       Alert.alert(
         'สำเร็จ',
@@ -163,6 +222,25 @@ export const BuyerManagementScreen: React.FC = () => {
   };
 
   const handleDeleteBuyer = async (buyerId: string) => {
+    if (Platform.OS === 'web') {
+      const confirmed = typeof globalThis.confirm === 'function'
+        ? globalThis.confirm('คุณต้องการลบข้อมูลผู้ซื้อรายนี้ใช่หรือไม่?')
+        : true;
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await MarketService.deleteBuyer(buyerId);
+        await loadBuyers();
+      } catch (error) {
+        globalThis.alert('ไม่สามารถลบข้อมูลได้');
+      }
+
+      return;
+    }
+
     Alert.alert(
       'ยืนยันการลบ',
       'คุณต้องการลบข้อมูลผู้ซื้อรายนี้ใช่หรือไม่?',
@@ -275,7 +353,7 @@ export const BuyerManagementScreen: React.FC = () => {
       <TouchableOpacity
         key={buyer.id}
         style={styles.buyerCard}
-        onPress={() => navigation.navigate('BuyerDetail', { buyerId: buyer.id })}
+        onPress={() => openAddModal(buyer)}
       >
         <View style={styles.buyerHeader}>
           <View style={styles.buyerTitleRow}>
@@ -330,30 +408,7 @@ export const BuyerManagementScreen: React.FC = () => {
           <View style={styles.buyerActions}>
             <TouchableOpacity
               style={styles.editButton}
-              onPress={() => {
-                setEditingBuyer(buyer);
-                setFormData({
-                  name: buyer.name,
-                  company: buyer.company,
-                  type: buyer.type,
-                  contactPerson: buyer.contactPerson,
-                  phone: buyer.phone,
-                  email: buyer.email,
-                  address: buyer.address,
-                  province: buyer.province,
-                  district: buyer.district,
-                  postalCode: buyer.postalCode,
-                  website: buyer.website || '',
-                  lineId: buyer.lineId || '',
-                  facebook: buyer.facebook || '',
-                  specialties: buyer.specialties,
-                  priceRange: buyer.priceRange,
-                  volumeCapacity: buyer.volumeCapacity,
-                  reliability: buyer.reliability,
-                  notes: buyer.notes || '',
-                });
-                setShowAddModal(true);
-              }}
+              onPress={() => openAddModal(buyer)}
             >
               <Ionicons name="create-outline" size={16} color={colors.primary} />
             </TouchableOpacity>
@@ -374,14 +429,11 @@ export const BuyerManagementScreen: React.FC = () => {
       visible={showAddModal}
       animationType="slide"
       presentationStyle="pageSheet"
+      onRequestClose={closeAddModal}
     >
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={() => {
-            setShowAddModal(false);
-            setEditingBuyer(null);
-            resetForm();
-          }}>
+          <TouchableOpacity onPress={closeAddModal}>
             <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>
@@ -629,10 +681,12 @@ export const BuyerManagementScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Logo size="small" showText={false} />
-            <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerBrand}>จัดการผู้ซื้อ</Text>
           </View>
-          <TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
+          <TouchableOpacity style={styles.addButton} onPress={() => openAddModal()}>
             <Ionicons name="add" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -697,7 +751,7 @@ export const BuyerManagementScreen: React.FC = () => {
               </Text>
               <AnimatedButton
                 title="เพิ่มผู้ซื้อใหม่"
-                onPress={() => setShowAddModal(true)}
+                onPress={() => openAddModal()}
                 variant="primary"
                 size="large"
               />
