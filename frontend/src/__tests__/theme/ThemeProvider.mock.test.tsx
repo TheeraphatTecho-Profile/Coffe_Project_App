@@ -37,7 +37,7 @@ describe('ThemeProvider Mock', () => {
   it('should pass context to children', () => {
     const TestComponent = () => {
       const theme = useContext(MockThemeContext);
-      return <View testID=" themed-component" style={{ backgroundColor: theme?.colors.primary }} />;
+      return <View testID="themed-component" style={{ backgroundColor: theme?.colors.primary }} />;
     };
 
     const { getByTestId } = render(

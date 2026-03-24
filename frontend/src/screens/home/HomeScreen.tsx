@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +19,7 @@ import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Logo } from '../../components/Logo';
 
 export const HomeScreen: React.FC<any> = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { colors, spacing, typography, radius, shadows } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [recentHarvests, setRecentHarvests] = useState<Harvest[]>([]);
@@ -59,6 +61,35 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  const handleLogout = () => {
+    const doLogout = async () => {
+      try {
+        await signOut();
+      } catch (err) {
+        console.error('Logout failed:', err);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = typeof globalThis.confirm === 'function'
+        ? globalThis.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')
+        : true;
+      if (confirmed) {
+        void doLogout();
+      }
+      return;
+    }
+
+    Alert.alert(
+      'ออกจากระบบ',
+      'คุณต้องการออกจากระบบใช่หรือไม่?',
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'ออกจากระบบ', style: 'destructive', onPress: () => { void doLogout(); } },
+      ]
+    );
+  };
+
   const formatNumber = (n: number): string => n.toLocaleString('th-TH');
   const formatCurrency = (n: number): string => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -84,12 +115,20 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
             {/* Header bar */}
             <View style={styles.header}>
               <Logo size="small" showText={false} />
-              <TouchableOpacity
-                style={styles.headerAvatar}
-                onPress={() => navigation.navigate('ProfileTab')}
-              >
-                <Ionicons name="person" size={18} color={colors.secondary} />
-              </TouchableOpacity>
+              <View style={styles.headerRight}>
+                <TouchableOpacity
+                  style={styles.headerAvatar}
+                  onPress={() => navigation.navigate('ProfileTab')}
+                >
+                  <Ionicons name="person" size={18} color={colors.secondary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerLogout}
+                  onPress={handleLogout}
+                >
+                  <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.8)" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Welcome */}
@@ -234,37 +273,44 @@ const createStyles = (colors: any, spacing: any, typography: any, radius: any, s
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
       paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
     },
+    headerRight: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    },
     headerAvatar: {
-      width: 36, height: 36, borderRadius: 18, backgroundColor: colors.secondary + '30',
+      width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    headerLogout: {
+      width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.12)',
       alignItems: 'center', justifyContent: 'center',
     },
 
     // Welcome
     welcomeSection: { paddingHorizontal: spacing.xl, marginBottom: spacing.xxl },
-    welcomeLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)', marginBottom: spacing.xs },
-    welcomeName: { fontSize: typography.sizes.xxl, fontWeight: '700', color: colors.textOnPrimary, marginBottom: spacing.xs },
-    welcomeSub: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)' },
+    welcomeLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.7)', marginBottom: spacing.xs },
+    welcomeName: { fontSize: typography.sizes.xxl, fontWeight: '700', color: '#FFFFFF', marginBottom: spacing.xs },
+    welcomeSub: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.6)' },
 
     // Revenue card
     revenueCard: {
-      marginHorizontal: spacing.xl, backgroundColor: colors.surfaceDark,
+      marginHorizontal: spacing.xl, backgroundColor: 'rgba(255,255,255,0.1)',
       borderRadius: radius.xl, padding: spacing.xxl, marginBottom: spacing.lg,
-      borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+      borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
     },
-    revenueLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)', marginBottom: spacing.sm },
-    revenueValue: { fontSize: 38, fontWeight: '700', color: colors.textOnPrimary },
-    emptyHint: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.35)', marginTop: spacing.sm },
+    revenueLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.7)', marginBottom: spacing.sm },
+    revenueValue: { fontSize: 38, fontWeight: '700', color: '#FFFFFF' },
+    emptyHint: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)', marginTop: spacing.sm },
 
     // Stats
     statsRow: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.xl },
     statCard: {
-      flex: 1, backgroundColor: colors.surfaceDark, borderRadius: radius.lg,
-      padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+      flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: radius.lg,
+      padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
     },
-    statLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.5)' },
+    statLabel: { fontSize: typography.sizes.sm, color: 'rgba(255,255,255,0.7)' },
     statValueRow: { flexDirection: 'row', alignItems: 'baseline' },
-    statValue: { fontSize: typography.sizes.xxl, fontWeight: '700', color: colors.textOnPrimary },
-    statUnit: { fontSize: typography.sizes.md, color: 'rgba(255,255,255,0.5)' },
+    statValue: { fontSize: typography.sizes.xxl, fontWeight: '700', color: '#FFFFFF' },
+    statUnit: { fontSize: typography.sizes.md, color: 'rgba(255,255,255,0.7)' },
 
     // Light section
     lightSection: {
@@ -291,7 +337,7 @@ const createStyles = (colors: any, spacing: any, typography: any, radius: any, s
     activityCard: {
       flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
       borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, gap: spacing.md,
-      ...shadows.sm,
+      borderWidth: 1, borderColor: colors.border, ...shadows.sm,
     },
     activityDateWrap: {
       alignItems: 'center', backgroundColor: colors.surfaceWarm,
@@ -312,7 +358,7 @@ const createStyles = (colors: any, spacing: any, typography: any, radius: any, s
     // Empty state
     emptyCard: {
       backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xxxl,
-      alignItems: 'center', gap: spacing.md, ...shadows.sm,
+      alignItems: 'center', gap: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadows.sm,
     },
     emptyTitle: { fontSize: typography.sizes.lg, fontWeight: '600', color: colors.text },
     emptyText: { fontSize: typography.sizes.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },

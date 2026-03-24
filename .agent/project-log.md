@@ -10,9 +10,9 @@
 | หัวข้อ                              | สถานะ                      |
 | ----------------------------------- | -------------------------- |
 | **Phase ปัจจุบัน**                  | ✅ Phase 4 Complete — Full Feature Implementation & Production Ready |
-| **อัปเดตล่าสุด**                    | 18 มีนาคม 2569             |
+| **อัปเดตล่าสุด**                    | 23 มีนาคม 2569 (Sprint 4.15) |
 | **งานค้าง (Pending)**               | 3 รายการ (PDF Export, GPS Mapping, Test Fixes) |
-| **ปัญหาที่ยังไม่แก้ (Open Issues)** | 1 รายการ (Jest Test Issues) |
+| **ปัญหาที่ยังไม่แก้ (Open Issues)** | 0 รายการ (Jest AuthContext tests fixed in Sprint 4.10) |
 
 ---
 
@@ -465,3 +465,117 @@
   - Private messaging
   - Real-time chat updates
   - Harvest card sharing in chat
+
+#### ✅ Sprint 4.6 — Onboarding & Knowledge Transfer
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Antigravity)
+- **สิ่งที่ทำ:** สรุปภาพรวมโครงสร้างโปรเจกต์ Tech Stack และจุดที่น่าสนใจในการศึกษา
+- **ผลลัพธ์:** ส่งมอบข้อมูลสำหรับคู่มือการเรียนรู้โครงสร้างโค้ดให้ผู้ใช้
+
+#### ✅ Sprint 4.7 — Logout Stability Fix (Web + Native)
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - แก้ `handleLogout` ใน `HomeScreen`, `ProfileScreen`, `SettingsScreen` ให้รองรับ Web แบบเสถียร
+  - ใช้ `globalThis.confirm(...)` บน Web และใช้ `Alert.alert(...)` บน Native
+  - ครอบ `signOut()` ด้วย async handler พร้อม error logging ในแต่ละหน้าจอ
+  - ตรวจ TypeScript compile หลังแก้ไข
+- **ผลลัพธ์:** Logout flow ทำงานสอดคล้องกันทั้ง 3 หน้าจอหลักและลดปัญหา callback ไม่ทำงานบน Web
+- **หมายเหตุ:** ยังมี TypeScript error เดิมที่ไม่เกี่ยวกับงานนี้ (`expo-notifications` ไม่พบ module declarations)
+
+#### ✅ Sprint 4.8 — Harden AuthContext signOut Error Propagation
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - ปรับ `signOut()` ใน `frontend/src/context/AuthContext.tsx` ให้ `throw err` หลัง `console.error(...)`
+  - คงพฤติกรรม `setUser(null)` เฉพาะกรณี sign out สำเร็จเท่านั้น
+  - ตรวจ `npx tsc --noEmit` หลังแก้ไข
+- **ผลลัพธ์:** หน้าจอที่เรียก `signOut()` สามารถจับ failure ได้จริงและไม่เกิด silent error
+- **หมายเหตุ:** ยังคงพบ TypeScript error เดิมที่ไม่เกี่ยวกับงาน logout (`expo-notifications` type declarations)
+
+#### ✅ Sprint 4.9 — Fix expo-notifications Compile Error
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - ติดตั้ง dependency `expo-notifications` ใน `frontend/` ด้วยคำสั่ง `npx expo install expo-notifications`
+  - แก้ `frontend/src/lib/notifications/notificationService.ts` ให้ `Notifications.setNotificationHandler(...)` ส่งค่า `NotificationBehavior` ครบ (`shouldShowBanner`, `shouldShowList`)
+  - ตรวจ compile ใหม่ด้วย `npx tsc --noEmit`
+- **ผลลัพธ์:** TypeScript compile ผ่านครบ (0 errors)
+- **หมายเหตุ:** มีคำเตือน Node engine (`>=20.19.4`) จาก dependency บางตัว แต่ไม่บล็อกการ build
+
+#### ✅ Sprint 4.10 — Fix AuthContext Jest Test Suite (renderHook + signOut rethrow)
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - แก้ `jest.setup.js` — เปลี่ยน `renderHook` mock ให้ใช้ `react-test-renderer` แทนการ call component เป็น plain function (root cause ที่ทำให้ `result.current` เป็น undefined)
+  - แก้ `jest.setup.js` — เปลี่ยน `act` mock ให้ใช้ `TestRenderer.act(...)` เพื่อให้ React state updates flush ถูกต้อง
+  - แก้ `jest.setup.js` — เพิ่ม `signInWithRedirect` และ `getRedirectResult` ใน firebase/auth global mock (ที่ `googleAuth.ts` import)
+  - แก้ `AuthContext.test.tsx` — เพิ่ม `jest.mock('../../lib/googleAuth', ...)` และ update Google auth tests ให้ mock ผ่าน `googleAuth` โดยตรงแทน `signInWithPopup`
+  - แก้ `AuthContext.test.tsx` — อัปเดต `signOut` error test ให้ catch error ที่ rethrow แล้วตรวจ `consoleSpy`
+  - แก้ `AuthContext.security.test.tsx` — อัปเดต `signOut` error test จาก `resolves.toBeUndefined()` เป็น `rejects.toThrow(...)` ให้ตรงกับ behavior ที่ rethrow
+- **ผลลัพธ์:** AuthContext test suite ผ่านครบ 39/39 tests, TypeScript compile 0 errors
+- **หมายเหตุ:** `renderHook` ใน `jest.setup.js` เคยเรียก React function components เป็น plain functions ทำให้ hooks fail ทุกครั้งที่ใช้ context wrapper
+
+#### ✅ Sprint 4.11 — Fix Google Auth Redirect Navigation (not going to dashboard)
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - แก้ `AuthContext.tsx` — เปลี่ยน `useEffect` ให้ `await handleGoogleRedirectResult()` ก่อน register `onAuthStateChanged` บน web platform (ป้องกัน race condition ที่ทำให้ `onAuthStateChanged` ยิงด้วย `null` ก่อน `getRedirectResult` ทำงานเสร็จ)
+  - แก้ `AppNavigator.tsx` — เปลี่ยน `return null` ระหว่าง loading เป็น `<ActivityIndicator>` เพื่อให้ผู้ใช้เห็น feedback ระหว่างรอ auth resolve
+  - ตรวจ TypeScript compile และ test suite หลังแก้ไข
+- **ผลลัพธ์:** หลัง Google redirect sign-in กลับมาที่ app, `onAuthStateChanged` ยิงหลัง redirect result ถูก process → `user` มีค่า → `AppNavigator` แสดง MainTabs ทันที
+- **หมายเหตุ:** บน native ไม่มีผลกระทบเพราะ `handleGoogleRedirectResult` return early เมื่อ `Platform.OS !== 'web'`
+
+#### ✅ Sprint 4.12 — Harden Google Redirect Auth State Fallback
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - แก้ `frontend/src/lib/googleAuth.ts` ให้ `handleGoogleRedirectResult()` คืนค่า `User | null` แทน `void` และคืน `result.user`/`auth.currentUser` เมื่อมี session
+  - แก้ `frontend/src/context/AuthContext.tsx` ให้เก็บ `redirectUser` และ set state ทันทีเมื่อ redirect result พบ user
+  - เพิ่ม fallback ใน `onAuthStateChanged` เป็น `firebaseUser ?? auth.currentUser ?? redirectUser` เพื่อกัน race condition หลัง redirect
+  - ตรวจ compile และ auth tests หลังแก้
+- **ผลลัพธ์:** กรณีที่ Google sign-in สำเร็จแต่ observer รอบแรกยังได้ `null` จะ fallback ไปใช้ `auth.currentUser`/`redirectUser` และพาเข้า `MainTabs` ได้ต่อเนื่อง
+- **หมายเหตุ:** patch นี้ทำงานร่วมกับ Sprint 4.11 และเน้นแก้เคส intermittent race บน web
+
+#### ✅ Sprint 4.13 — Add Runtime Logs for Web Google Redirect Debugging
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - แก้ `frontend/src/lib/googleAuth.ts` เพิ่ม `console.log(...)` ที่ `signInWithGoogleWeb()` ก่อน redirect
+  - เพิ่ม log ใน `handleGoogleRedirectResult()` สำหรับ 4 จุด: start, result, no-result, error
+  - แสดง `window.location.href` และ `auth.currentUser?.email` ใน log เพื่อใช้จับ runtime state หลัง redirect
+  - ตรวจ `npx tsc --noEmit` หลังแก้
+- **ผลลัพธ์:** สามารถเก็บ runtime evidence ได้ว่าปัญหาเกิดก่อน redirect, ระหว่าง `getRedirectResult`, หรือหลังกลับเข้า app แล้ว `auth.currentUser` ยังเป็น `null`
+- **หมายเหตุ:** sprint นี้ยังไม่ใช่ final fix แต่เป็น instrumentation เพื่อ pinpoint root cause ของ bug บน web
+
+#### ✅ Sprint 4.14 — Fix Web Firebase Auth Redirect Persistence Initialization
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - แก้ `frontend/src/lib/firebase.ts` ให้ web ใช้ `initializeAuth(...)` พร้อม `browserLocalPersistence` และ `browserPopupRedirectResolver`
+  - คง native path เป็น `getAuth(app)` เหมือนเดิม เพื่อไม่กระทบ Android/iOS
+  - แก้ `frontend/jest.setup.js` เพิ่ม mock สำหรับ `initializeAuth`, `browserLocalPersistence`, `browserPopupRedirectResolver`
+  - ตรวจ `npx tsc --noEmit` และ auth tests หลังแก้
+- **ผลลัพธ์:** แก้ root cause ที่ทำให้ `getRedirectResult()` ได้ `no-result` บน web เพราะ auth instance ไม่ได้ถูก initialize ด้วย redirect resolver/persistence ที่เหมาะกับ browser flow
+- **หมายเหตุ:** ขั้นถัดไปคือให้ผู้ใช้ refresh หน้าและทดสอบ Google login อีกครั้งเพื่อยืนยันว่า redirect กลับมาแล้ว route เข้า dashboard ได้จริง
+
+#### ✅ Sprint 4.15 — Use Popup-First Google Auth on Localhost Web
+
+- **วันที่:** 23 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **สิ่งที่ทำ:**
+  - แก้ `frontend/src/lib/googleAuth.ts` ให้ `signInWithGoogleWeb()` ใช้ `signInWithPopup(...)` ก่อนเมื่อรันบน `localhost` หรือ `127.0.0.1`
+  - เพิ่ม fallback ไป `signInWithRedirect(...)` เฉพาะกรณี popup ถูก block หรือ browser environment ไม่รองรับ popup flow
+  - เพิ่ม log `signInWithGoogleWeb:popup` และ `signInWithGoogleWeb:popup-error` เพื่อจับการทำงานของ localhost flow
+  - ตรวจ `npx tsc --noEmit` และ auth tests หลังแก้
+- **ผลลัพธ์:** เลี่ยงปัญหา redirect result หายบน localhost web โดยเปลี่ยน dev flow ไปใช้ popup ซึ่งไม่ต้องพึ่ง redirect state restore ข้าม origin
+- **หมายเหตุ:** production/custom domain ยังใช้ redirect fallback ได้ตามเดิม

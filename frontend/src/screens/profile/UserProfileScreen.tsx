@@ -93,7 +93,7 @@ export const UserProfileScreen: React.FC<Props> = ({ navigation, route }) => {
   const renderStats = () => (
     <View style={styles.statsContainer}>
       <TouchableOpacity style={styles.statItem}>
-        <Text style={styles.statValue}>{profile?.farms_count || 0}</Text>
+        <Text style={styles.statValue}>{profile?.farm_count || 0}</Text>
         <Text style={styles.statLabel}>สวน</Text>
       </TouchableOpacity>
       <TouchableOpacity 
@@ -190,7 +190,7 @@ export const UserProfileScreen: React.FC<Props> = ({ navigation, route }) => {
       <Text style={styles.postContent} numberOfLines={2}>{post.content}</Text>
       <View style={styles.postMeta}>
         <Text style={styles.postDate}>
-          {post.created_at?.toDate?.().toLocaleDateString('th-TH') || ''}
+          {(post.created_at as any)?.toDate?.().toLocaleDateString('th-TH') || ''}
         </Text>
         <View style={styles.postStats}>
           <Ionicons name="heart" size={14} color={COLORS.error} />

@@ -18,25 +18,25 @@ interface ThemeContextType {
 }
 
 const lightColors = {
-  background: '#FBF5EB',
+  background: '#F5F7FA',
   surface: '#FFFFFF',
-  text: '#2A1F14',
-  textSecondary: '#6B5E52',
-  primary: '#6F4E37',
-  secondary: '#8B5A2B',
-  border: '#E5DDD3',
-  borderLight: '#F0EBE3',
+  text: '#1A2332',
+  textSecondary: '#5A6B7D',
+  primary: '#2E7D32',
+  secondary: '#C49A2A',
+  border: '#E2E8F0',
+  borderLight: '#EDF2F7',
 };
 
 const darkColors = {
-  background: '#1A1410',
-  surface: '#2A1F14',
-  text: '#F5F0EB',
-  textSecondary: '#A89B8C',
-  primary: '#A67C52',
-  secondary: '#C4956A',
-  border: '#3D2E1F',
-  borderLight: '#2A1F14',
+  background: '#0F1419',
+  surface: '#1C2530',
+  text: '#E8ECF0',
+  textSecondary: '#8899AA',
+  primary: '#4CAF50',
+  secondary: '#DABB5C',
+  border: '#2A3544',
+  borderLight: '#1E2936',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

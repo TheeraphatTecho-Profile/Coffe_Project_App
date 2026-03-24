@@ -184,7 +184,7 @@ export const SocialService = {
   async getFollowersCount(userId: string): Promise<number> {
     try {
       const followsRef = collection(db, 'follows');
-      const q = query(where('following_id', '==', userId));
+      const q = query(followsRef, where('following_id', '==', userId));
       const snapshot = await getDocs(q);
       return snapshot.size;
     } catch (error) {
@@ -196,7 +196,7 @@ export const SocialService = {
   async getFollowingCount(userId: string): Promise<number> {
     try {
       const followsRef = collection(db, 'follows');
-      const q = query(where('follower_id', '==', userId));
+      const q = query(followsRef, where('follower_id', '==', userId));
       const snapshot = await getDocs(q);
       return snapshot.size;
     } catch (error) {

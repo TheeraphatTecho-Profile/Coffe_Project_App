@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   regionTitle: { fontSize: FONTS.sizes.lg, fontWeight: '700', color: COLORS.text, marginLeft: SPACING.sm, flex: 1 },
   regionCount: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
   groupsScrollContent: { paddingHorizontal: SPACING.xl, gap: SPACING.md },
-  groupCard: { width: 160, backgroundColor: COLORS.white, borderRadius: RADIUS.xl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  groupCard: { width: 160, backgroundColor: COLORS.white, borderRadius: RADIUS.xl, overflow: 'hidden', boxShadow: '0px 2px 8px rgba(0,0,0,0.05)', elevation: 2 },
   groupCover: { height: 60, justifyContent: 'center', alignItems: 'center' },
   groupCoverImage: { width: '100%', height: '100%' },
   groupInfo: { padding: SPACING.md },
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: FONTS.sizes.xl, fontWeight: '700', color: COLORS.text, marginTop: SPACING.lg },
   emptyText: { fontSize: FONTS.sizes.md, color: COLORS.textSecondary, marginTop: SPACING.sm },
   bottomSpacer: { height: 100 },
-  createGroupFab: { position: 'absolute', bottom: 30, right: 24, width: 56, height: 56, backgroundColor: COLORS.primary, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  createGroupFab: { position: 'absolute', bottom: 30, right: 24, width: 56, height: 56, backgroundColor: COLORS.primary, borderRadius: 28, justifyContent: 'center', alignItems: 'center', boxShadow: '0px 4px 8px rgba(46,125,50,0.3)', elevation: 4 },
 });
 
 export default GroupsScreen;

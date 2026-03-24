@@ -70,4 +70,18 @@ export type RootStackParamList = {
   Main: undefined;
   Settings: undefined;
   Community: undefined;
+  // Cost tracking
+  CostList: { farmId?: string };
+  AddCost: { farmId?: string; costId?: string };
+  CostAnalytics: { farmId?: string };
+  // Maintenance
+  MaintenanceDashboard: { farmId?: string };
+  MaintenanceCalendar: { farmId?: string };
+  AddMaintenanceTask: { farmId?: string; taskId?: string };
+  // Weather
+  WeatherAlerts: { farmId?: string };
+  WeatherAlertSettings: { farmId?: string };
+  // Market
+  MarketIntelligence: { farmId?: string };
+  BuyerManagement: { farmId?: string };
 };

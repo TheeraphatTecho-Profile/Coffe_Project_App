@@ -11,6 +11,11 @@ import {
 } from 'firebase/auth';
 
 // Mock firebase modules
+jest.mock('../../lib/googleAuth', () => ({
+  signInWithGoogle: jest.fn(),
+  handleGoogleRedirectResult: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('firebase/app', () => ({
   initializeApp: jest.fn(() => 'mock-app'),
   getApps: jest.fn(() => []),
@@ -44,6 +49,7 @@ jest.mock('firebase/firestore', () => ({
 }));
 
 import { AuthProvider, useAuth } from '../../context/AuthContext';
+import { signInWithGoogle as mockGoogleSignIn } from '../../lib/googleAuth';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
@@ -171,7 +177,11 @@ describe('AuthContext', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.signOut();
+        try {
+          await result.current.signOut();
+        } catch {
+          // expected: signOut rethrows after logging
+        }
       });
 
       expect(consoleSpy).toHaveBeenCalled();
@@ -210,7 +220,7 @@ describe('AuthContext', () => {
 
   describe('social auth', () => {
     it('should call signInWithPopup for Google', async () => {
-      (signInWithPopup as jest.Mock).mockResolvedValue({ user: { uid: '1' } });
+      (mockGoogleSignIn as jest.Mock).mockResolvedValue({ error: null });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -219,7 +229,7 @@ describe('AuthContext', () => {
         response = await result.current.signInWithGoogle();
       });
 
-      expect(signInWithPopup).toHaveBeenCalled();
+      expect(mockGoogleSignIn).toHaveBeenCalled();
       expect(response.error).toBeNull();
     });
 
@@ -252,7 +262,7 @@ describe('AuthContext', () => {
     });
 
     it('should return error when Google auth fails', async () => {
-      (signInWithPopup as jest.Mock).mockRejectedValue(new Error('Popup closed'));
+      (mockGoogleSignIn as jest.Mock).mockResolvedValue({ error: new Error('Popup closed') });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 

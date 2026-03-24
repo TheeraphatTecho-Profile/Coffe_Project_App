@@ -257,9 +257,9 @@ describe('AuthContext Security Tests', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      // signOut returns void, so we just check it doesn't throw
+      // signOut rethrows after logging, so callers can handle the failure
       await act(async () => {
-        await expect(result.current.signOut()).resolves.toBeUndefined();
+        await expect(result.current.signOut()).rejects.toThrow('auth/network-request-failed');
       });
     });
 

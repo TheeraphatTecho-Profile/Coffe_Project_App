@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -53,6 +53,24 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const handleLogout = () => {
+    const doLogout = async () => {
+      try {
+        await signOut();
+      } catch (err) {
+        console.error('Logout failed:', err);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = typeof globalThis.confirm === 'function'
+        ? globalThis.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')
+        : true;
+      if (confirmed) {
+        void doLogout();
+      }
+      return;
+    }
+
     Alert.alert(
       'ออกจากระบบ',
       'คุณต้องการออกจากระบบใช่หรือไม่?',
@@ -62,7 +80,7 @@ export const ProfileScreen: React.FC = () => {
           text: 'ออกจากระบบ', 
           style: 'destructive',
           onPress: async () => {
-            await signOut();
+            await doLogout();
           }
         },
       ]
@@ -201,8 +219,8 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-const DARK_BG = '#2A1F14';
-const DARK_SURFACE = '#3D2E1F';
+const DARK_BG = '#1A3C2A';
+const DARK_SURFACE = 'rgba(255,255,255,0.1)';
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: DARK_BG },

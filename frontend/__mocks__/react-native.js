@@ -34,10 +34,18 @@ const StyleSheet = {
     return processedStyles;
   }),
   flatten: jest.fn((style) => {
+    if (!style) return {};
     if (Array.isArray(style)) {
-      return Object.assign({}, ...style);
+      let result = {};
+      for (let i = 0; i < style.length; ++i) {
+        const computedStyle = StyleSheet.flatten(style[i]);
+        if (computedStyle) {
+          result = { ...result, ...computedStyle };
+        }
+      }
+      return result;
     }
-    return style || {};
+    return style;
   }),
   absoluteFillObject: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
   hairlineWidth: 1,

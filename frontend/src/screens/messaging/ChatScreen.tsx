@@ -25,7 +25,7 @@ type Props = {
 };
 
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { conversationId, otherUser } = route.params;
+  const { conversationId, otherUser } = (route.params as { conversationId: string; otherUser: any }) ?? { conversationId: '', otherUser: null };
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');

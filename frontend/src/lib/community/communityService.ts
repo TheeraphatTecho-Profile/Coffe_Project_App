@@ -19,8 +19,8 @@ import {
   Timestamp,
   Firestore,
 } from 'firebase/firestore';
-import { db } from './firebase';
-import { useAuth } from '../context/AuthContext';
+import { db } from '../firebase';
+// Auth context is used at the screen level, not in services
 
 export interface CommunityPost {
   id: string;

@@ -66,7 +66,7 @@ export const FollowersScreen: React.FC<Props> = ({ navigation, route }) => {
       <View style={styles.followerInfo}>
         <Text style={styles.followerName}>{item.follower_name}</Text>
         <Text style={styles.followerMeta}>
-          เริ่มติดตามเมื่อ {item.created_at?.toDate?.().toLocaleDateString('th-TH') || ''}
+          เริ่มติดตามเมื่อ {(item.created_at as any)?.toDate?.().toLocaleDateString('th-TH') || ''}
         </Text>
       </View>
       <TouchableOpacity style={styles.followButton}>
