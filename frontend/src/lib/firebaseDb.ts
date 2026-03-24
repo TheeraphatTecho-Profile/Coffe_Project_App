@@ -21,30 +21,30 @@ export interface Farm {
   id: string;
   name: string;
   area: number;
-  soil_type: string | null;
-  water_source: string | null;
+  soilType: string | null;
+  waterSource: string | null;
   province: string;
   district: string | null;
   altitude: number | null;
   variety: string | null;
-  tree_count: number | null;
-  planting_year: number | null;
+  treeCount: number | null;
+  plantingYear: number | null;
   notes: string | null;
-  created_at: Timestamp;
-  user_id: string;
+  createdAt: Timestamp;
+  userId: string;
 }
 
 export interface Harvest {
   id: string;
-  farm_id: string;
-  harvest_date: string;
+  farmId: string;
+  harvestDate: string;
   variety: string | null;
-  weight_kg: number;
+  weightKg: number;
   income: number;
   shift: string;
   notes: string | null;
-  created_at: Timestamp;
-  user_id: string;
+  createdAt: Timestamp;
+  userId: string;
   farms?: { name: string };
 }
 
@@ -53,7 +53,7 @@ export const FarmService = {
    * Get all farms for a specific user.
    */
   async getAll(userId: string): Promise<Farm[]> {
-    const q = query(farmsRef, where('user_id', '==', userId), orderBy('created_at', 'desc'));
+    const q = query(farmsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Farm));
   },
@@ -70,11 +70,11 @@ export const FarmService = {
   /**
    * Create a new farm.
    */
-  async create(userId: string, data: Omit<Farm, 'id' | 'created_at' | 'user_id'>): Promise<Farm> {
+  async create(userId: string, data: Omit<Farm, 'id' | 'createdAt' | 'userId'>): Promise<Farm> {
     const docRef = await addDoc(farmsRef, {
       ...data,
-      user_id: userId,
-      created_at: serverTimestamp(),
+      userId: userId,
+      createdAt: serverTimestamp(),
     });
     const docSnap = await getDoc(docRef);
     return { id: docSnap.id, ...docSnap.data() } as Farm;
@@ -98,7 +98,7 @@ export const FarmService = {
    * Count farms for a specific user.
    */
   async count(userId: string): Promise<number> {
-    const q = query(farmsRef, where('user_id', '==', userId));
+    const q = query(farmsRef, where('userId', '==', userId));
     const snapshot = await getDocs(q);
     return snapshot.size;
   },
@@ -109,12 +109,12 @@ export const HarvestService = {
    * Get all harvests for a specific user with farm names.
    */
   async getAll(userId: string): Promise<Harvest[]> {
-    const q = query(harvestsRef, where('user_id', '==', userId), orderBy('harvest_date', 'desc'));
+    const q = query(harvestsRef, where('userId', '==', userId), orderBy('harvestDate', 'desc'));
     const snapshot = await getDocs(q);
 
     const harvestDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Harvest));
 
-    const farmIds = [...new Set(harvestDocs.map(h => h.farm_id).filter(Boolean))];
+    const farmIds = [...new Set(harvestDocs.map(h => h.farmId).filter(Boolean))];
     const farms: Record<string, string> = {};
 
     for (const farmId of farmIds) {
@@ -127,7 +127,7 @@ export const HarvestService = {
 
     return harvestDocs.map(h => ({
       ...h,
-      farms: h.farm_id ? { name: farms[h.farm_id] || '' } : undefined,
+      farms: h.farmId ? { name: farms[h.farmId] || '' } : undefined,
     }));
   },
 
@@ -140,8 +140,8 @@ export const HarvestService = {
 
     const data = docSnap.data() as Harvest;
     let farmName = '';
-    if (data.farm_id) {
-      const farmSnap = await getDoc(doc(db, 'farms', data.farm_id));
+    if (data.farmId) {
+      const farmSnap = await getDoc(doc(db, 'farms', data.farmId));
       const farmData = farmSnap.data();
       if (farmSnap.exists() && farmData) {
         farmName = farmData.name;
@@ -158,11 +158,11 @@ export const HarvestService = {
   /**
    * Create a new harvest record.
    */
-  async create(userId: string, data: Omit<Harvest, 'id' | 'created_at' | 'user_id'>): Promise<Harvest> {
+  async create(userId: string, data: Omit<Harvest, 'id' | 'createdAt' | 'userId'>): Promise<Harvest> {
     const docRef = await addDoc(harvestsRef, {
       ...data,
-      user_id: userId,
-      created_at: serverTimestamp(),
+      userId: userId,
+      createdAt: serverTimestamp(),
     });
     const docSnap = await getDoc(docRef);
     return { id: docSnap.id, ...docSnap.data() } as Harvest;
@@ -186,7 +186,7 @@ export const HarvestService = {
    * Get summary statistics for a user's harvests.
    */
   async getSummary(userId: string): Promise<{ totalWeight: number; totalIncome: number }> {
-    const q = query(harvestsRef, where('user_id', '==', userId));
+    const q = query(harvestsRef, where('userId', '==', userId));
     const snapshot = await getDocs(q);
 
     let totalWeight = 0;
@@ -194,7 +194,7 @@ export const HarvestService = {
 
     snapshot.docs.forEach(d => {
       const data = d.data();
-      totalWeight += data.weight_kg || 0;
+      totalWeight += data.weightKg || 0;
       totalIncome += data.income || 0;
     });
 

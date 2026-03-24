@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { showAlert } from '../../lib/alert';
+import { isRateLimited, recordFailedAttempt, clearAttempts, formatLockoutMessage } from '../../lib/authRateLimit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,11 +55,24 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     if (!validateEmail(email)) return;
     if (!password) return;
 
+    const { limited, retryAfterMs } = isRateLimited(email);
+    if (limited) {
+      showAlert('บัญชีถูกล็อก', formatLockoutMessage(retryAfterMs));
+      return;
+    }
+
     try {
       setLoading(true);
       const { error } = await signIn(email, password);
       if (error) {
-        showAlert('เข้าสู่ระบบไม่สำเร็จ', error.message);
+        const { limited: nowLimited, retryAfterMs: wait } = recordFailedAttempt(email);
+        if (nowLimited) {
+          showAlert('บัญชีถูกล็อกชั่วคราว', formatLockoutMessage(wait));
+        } else {
+          showAlert('เข้าสู่ระบบไม่สำเร็จ', error.message);
+        }
+      } else {
+        clearAttempts(email);
       }
     } catch (err) {
       console.error('Login error:', err);
