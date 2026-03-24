@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +21,7 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('ข้อมูลไม่ครบ', 'กรุณาระบุชื่อ');
+      showAlert('ข้อมูลไม่ครบ', 'กรุณาระบุชื่อ');
       return;
     }
 
@@ -28,10 +29,10 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       // Note: Firebase profile update would go here
       // For now, just show success
-      Alert.alert('สำเร็จ', 'บันทึกข้อมูลโปรไฟล์เรียบร้อย');
+      showAlert('สำเร็จ', 'บันทึกข้อมูลโปรไฟล์เรียบร้อย');
       navigation.goBack();
     } catch (err) {
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้');
+      showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้');
     } finally {
       setLoading(false);
     }

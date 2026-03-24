@@ -9,8 +9,11 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
   serverTimestamp,
   Timestamp,
+  QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -105,30 +108,81 @@ export const FarmService = {
 };
 
 export const HarvestService = {
+  /** Cache farm names to avoid repeated lookups across pages */
+  _farmNameCache: {} as Record<string, string>,
+
+  /** Resolve farm names for a batch of harvests (uses cache) */
+  async _resolveFarmNames(harvests: Harvest[]): Promise<Harvest[]> {
+    const farmIds = [...new Set(harvests.map(h => h.farmId).filter(Boolean))];
+
+    // Fetch only uncached farm names
+    for (const farmId of farmIds) {
+      if (this._farmNameCache[farmId]) continue;
+      try {
+        const farmSnap = await getDoc(doc(db, 'farms', farmId));
+        const farmData = farmSnap.data();
+        if (farmSnap.exists() && farmData) {
+          this._farmNameCache[farmId] = farmData.name;
+        }
+      } catch { /* skip */ }
+    }
+
+    return harvests.map(h => ({
+      ...h,
+      farms: h.farmId ? { name: this._farmNameCache[h.farmId] || '' } : undefined,
+    }));
+  },
+
   /**
    * Get all harvests for a specific user with farm names.
    */
   async getAll(userId: string): Promise<Harvest[]> {
     const q = query(harvestsRef, where('userId', '==', userId), orderBy('harvestDate', 'desc'));
     const snapshot = await getDocs(q);
-
     const harvestDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Harvest));
+    return this._resolveFarmNames(harvestDocs);
+  },
 
-    const farmIds = [...new Set(harvestDocs.map(h => h.farmId).filter(Boolean))];
-    const farms: Record<string, string> = {};
-
-    for (const farmId of farmIds) {
-      const farmSnap = await getDoc(doc(db, 'farms', farmId));
-      const farmData = farmSnap.data();
-      if (farmSnap.exists() && farmData) {
-        farms[farmId] = farmData.name;
-      }
+  /**
+   * Get a page of harvests (cursor-based pagination).
+   * Returns { harvests, lastDoc, hasMore }.
+   */
+  async getPage(
+    userId: string,
+    pageSize: number = 15,
+    afterDoc?: QueryDocumentSnapshot | null
+  ): Promise<{
+    harvests: Harvest[];
+    lastDoc: QueryDocumentSnapshot | null;
+    hasMore: boolean;
+  }>  {
+    let q;
+    if (afterDoc) {
+      q = query(
+        harvestsRef,
+        where('userId', '==', userId),
+        orderBy('harvestDate', 'desc'),
+        startAfter(afterDoc),
+        limit(pageSize + 1)
+      );
+    } else {
+      q = query(
+        harvestsRef,
+        where('userId', '==', userId),
+        orderBy('harvestDate', 'desc'),
+        limit(pageSize + 1)
+      );
     }
+    const snapshot = await getDocs(q);
 
-    return harvestDocs.map(h => ({
-      ...h,
-      farms: h.farmId ? { name: farms[h.farmId] || '' } : undefined,
-    }));
+    const hasMore = snapshot.docs.length > pageSize;
+    const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+    const lastDocument = docs.length > 0 ? docs[docs.length - 1] : null;
+
+    const harvestDocs = docs.map(d => ({ id: d.id, ...d.data() } as Harvest));
+    const harvests = await this._resolveFarmNames(harvestDocs);
+
+    return { harvests, lastDoc: lastDocument, hasMore };
   },
 
   /**

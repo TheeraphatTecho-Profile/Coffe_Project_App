@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,6 +15,11 @@ import { FarmStackParamList, FarmData } from '../../types/navigation';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
+import {
+  getCurrentLocation,
+  formatCoordinate,
+  GpsCoordinate,
+} from '../../lib/locationService';
 
 type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'AddFarmStep3'>;
@@ -22,8 +29,9 @@ type Props = {
 type Altitude = 'low' | 'medium' | 'high' | null;
 
 /**
- * Add Farm Step 3 - Location and altitude information.
- * Not shown in mockup but implied by 4-step flow.
+ * Add Farm Step 3 - Location, altitude, and GPS coordinate information.
+ * Allows the farmer to either manually enter location data or auto-detect
+ * GPS coordinates from the device.
  */
 export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
   const [altitude, setAltitude] = useState<Altitude>(null);
@@ -31,12 +39,53 @@ export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
   const [district, setDistrict] = useState('');
   const [subDistrict, setSubDistrict] = useState('');
 
+  // GPS state
+  const [gpsCoord, setGpsCoord] = useState<GpsCoordinate | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [latText, setLatText] = useState('');
+  const [lngText, setLngText] = useState('');
+
+  /**
+   * Fetch GPS coordinates from the device.
+   * Updates latitude/longitude fields and optionally auto-selects altitude
+   * tier when real altitude data is available.
+   */
+  const handleGetGps = useCallback(async () => {
+    setGpsLoading(true);
+    setGpsError(null);
+
+    const result = await getCurrentLocation(true);
+
+    if (result.success) {
+      const coord = result.coordinate;
+      setGpsCoord(coord);
+      setLatText(coord.latitude.toFixed(6));
+      setLngText(coord.longitude.toFixed(6));
+
+      // Auto-select altitude tier when real altitude is available
+      if (coord.altitude != null) {
+        if (coord.altitude < 600) setAltitude('low');
+        else if (coord.altitude < 900) setAltitude('medium');
+        else setAltitude('high');
+      }
+    } else {
+      setGpsError(result.error);
+    }
+
+    setGpsLoading(false);
+  }, []);
+
   const handleNext = () => {
+    const lat = parseFloat(latText) || gpsCoord?.latitude || null;
+    const lng = parseFloat(lngText) || gpsCoord?.longitude || null;
+
     const farmData: Partial<FarmData> = {
       ...route.params.farmData,
       province,
       district: district.trim() || null,
       altitude: altitude ? (altitude === 'low' ? 300 : altitude === 'medium' ? 600 : 900) : null,
+      ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
     };
     navigation.navigate('AddFarmStep4', { farmData });
   };
@@ -90,7 +139,71 @@ export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
             onChangeText={setSubDistrict}
           />
 
-          {/* Altitude selection */}
+          {/* ───── GPS Section ───── */}
+          <Text style={styles.sectionTitle}>
+            <Ionicons name="navigate-outline" size={18} color={COLORS.textSecondary} />
+            {'  '}พิกัด GPS
+          </Text>
+
+          {/* GPS auto-detect button */}
+          <TouchableOpacity
+            style={styles.gpsButton}
+            onPress={handleGetGps}
+            disabled={gpsLoading}
+            activeOpacity={0.7}
+          >
+            {gpsLoading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <Ionicons name="locate" size={20} color={COLORS.white} />
+            )}
+            <Text style={styles.gpsButtonText}>
+              {gpsLoading ? 'กำลังค้นหาตำแหน่ง...' : 'ดึงพิกัด GPS อัตโนมัติ'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* GPS error */}
+          {gpsError && (
+            <View style={styles.gpsErrorBox}>
+              <Ionicons name="warning-outline" size={16} color={COLORS.error} />
+              <Text style={styles.gpsErrorText}>{gpsError}</Text>
+            </View>
+          )}
+
+          {/* GPS success badge */}
+          {gpsCoord && !gpsError && (
+            <View style={styles.gpsSuccessBox}>
+              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+              <Text style={styles.gpsSuccessText}>
+                พบตำแหน่ง: {formatCoordinate(gpsCoord)}
+                {gpsCoord.accuracy != null && ` (±${Math.round(gpsCoord.accuracy)} ม.)`}
+              </Text>
+            </View>
+          )}
+
+          {/* Manual lat/lng inputs */}
+          <View style={styles.coordRow}>
+            <View style={styles.coordField}>
+              <Input
+                label="ละติจูด (Latitude)"
+                placeholder="เช่น 17.4870"
+                value={latText}
+                onChangeText={setLatText}
+                keyboardType={Platform.OS === 'web' ? 'default' : 'decimal-pad'}
+              />
+            </View>
+            <View style={styles.coordField}>
+              <Input
+                label="ลองจิจูด (Longitude)"
+                placeholder="เช่น 101.7223"
+                value={lngText}
+                onChangeText={setLngText}
+                keyboardType={Platform.OS === 'web' ? 'default' : 'decimal-pad'}
+              />
+            </View>
+          </View>
+
+          {/* ───── Altitude section ───── */}
           <Text style={styles.sectionTitle}>
             <Ionicons name="trending-up" size={18} color={COLORS.textSecondary} />
             {'  '}ระดับความสูงของสวน
@@ -126,11 +239,12 @@ export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
             ))}
           </View>
 
-          {/* GPS note */}
+          {/* GPS info note */}
           <View style={styles.infoNote}>
-            <Ionicons name="navigate-outline" size={18} color={COLORS.primary} />
+            <Ionicons name="information-circle-outline" size={18} color={COLORS.primary} />
             <Text style={styles.infoText}>
-              คุณสามารถเพิ่มพิกัด GPS ได้ภายหลังจากหน้าตั้งค่าสวน เพื่อระบุตำแหน่งที่แน่นอน
+              พิกัด GPS ช่วยให้แอปแสดงตำแหน่งสวนบนแผนที่ได้อย่างแม่นยำ
+              แนะนำให้กดปุ่มดึงพิกัดขณะอยู่ที่สวนจริง
             </Text>
           </View>
         </ScrollView>
@@ -216,7 +330,63 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: SPACING.lg,
+    marginTop: SPACING.lg,
   },
+
+  // ─── GPS styles ───
+  gpsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.md,
+  },
+  gpsButtonText: {
+    color: COLORS.white,
+    fontSize: FONTS.sizes.md,
+    fontWeight: '600',
+  },
+  gpsErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.errorLight,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  gpsErrorText: {
+    flex: 1,
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.error,
+  },
+  gpsSuccessBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.successLight,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  gpsSuccessText: {
+    flex: 1,
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.success,
+  },
+  coordRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  coordField: {
+    flex: 1,
+  },
+
+  // ─── Altitude styles ───
   altitudeGrid: {
     gap: SPACING.md,
     marginBottom: SPACING.xxl,

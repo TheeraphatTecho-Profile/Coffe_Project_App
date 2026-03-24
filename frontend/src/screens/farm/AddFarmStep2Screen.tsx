@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FarmStackParamList, FarmData } from '../../types/navigation';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
+import { DropdownPicker } from '../../components/DropdownPicker';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 
 type Props = {
@@ -133,15 +134,12 @@ export const AddFarmStep2Screen: React.FC<Props> = ({ navigation, route }) => {
               </View>
             </View>
 
-            <Text style={styles.fieldLabel}>ชื่อแหล่งน้ำหรือประเภท</Text>
-
-            {/* Dropdown-like selector */}
-            <View style={styles.selectContainer}>
-              <Text style={styles.selectValue}>
-                {WATER_SOURCES.find((s) => s.value === waterSource)?.label}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-            </View>
+            <DropdownPicker
+              label="ชื่อแหล่งน้ำหรือประเภท"
+              options={WATER_SOURCES.map((s) => ({ value: s.value, label: s.label }))}
+              selectedValue={waterSource}
+              onValueChange={(val) => setWaterSource(val as WaterSource)}
+            />
 
             <Input
               label="รายละเอียดเพิ่มเติม (ถ้ามี)"

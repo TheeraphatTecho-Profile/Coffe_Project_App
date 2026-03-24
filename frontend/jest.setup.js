@@ -389,3 +389,62 @@ jest.mock('react-native-svg', () => {
     default: View,
   };
 });
+
+// Mock expo-location
+jest.mock('expo-location', () => ({
+  requestForegroundPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  getForegroundPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  getCurrentPositionAsync: jest.fn().mockResolvedValue({
+    coords: { latitude: 17.487, longitude: 101.722, altitude: 850, accuracy: 10 },
+  }),
+  Accuracy: { Balanced: 3, High: 4 },
+}));
+
+// Mock expo-print (for PDF export)
+jest.mock('expo-print', () => ({
+  printToFileAsync: jest.fn().mockResolvedValue({ uri: 'file:///mock/output.pdf' }),
+  printAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
+// Mock expo-image-picker
+jest.mock('expo-image-picker', () => ({
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
+  launchCameraAsync: jest.fn().mockResolvedValue({ canceled: true, assets: [] }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  MediaTypeOptions: { Images: 'Images', Videos: 'Videos', All: 'All' },
+}));
+
+// Mock expo-image-manipulator
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn().mockResolvedValue({ uri: 'file:///mock/manipulated.jpg' }),
+  SaveFormat: { JPEG: 'jpeg', PNG: 'png' },
+}));
+
+// Mock expo-notifications
+jest.mock('expo-notifications', () => ({
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  getExpoPushTokenAsync: jest.fn().mockResolvedValue({ data: 'mock-push-token' }),
+  setNotificationHandler: jest.fn(),
+  scheduleNotificationAsync: jest.fn().mockResolvedValue('mock-notification-id'),
+  cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  AndroidImportance: { MAX: 5, HIGH: 4, DEFAULT: 3 },
+}));
+
+// Mock expo-crypto
+jest.mock('expo-crypto', () => ({
+  digestStringAsync: jest.fn().mockResolvedValue('mock-hash'),
+  CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+  randomUUID: jest.fn(() => 'mock-uuid'),
+}));
+
+// Mock expo-auth-session
+jest.mock('expo-auth-session', () => ({
+  makeRedirectUri: jest.fn(() => 'https://mock-redirect.com'),
+  useAuthRequest: jest.fn(() => [null, null, jest.fn()]),
+  ResponseType: { Code: 'code', Token: 'token' },
+}));
+

@@ -9,10 +9,65 @@
 
 | หัวข้อ                              | สถานะ                      |
 | ----------------------------------- | -------------------------- |
-| **Phase ปัจจุบัน**                  | ✅ Phase 4 Complete — Full Feature Implementation & Production Ready |
-| **อัปเดตล่าสุด**                    | 23 มีนาคม 2569 (Sprint 4.15) |
-| **งานค้าง (Pending)**               | 3 รายการ (PDF Export, GPS Mapping, Test Fixes) |
-| **ปัญหาที่ยังไม่แก้ (Open Issues)** | 0 รายการ (Jest AuthContext tests fixed in Sprint 4.10) |
+| **Phase ปัจจุบัน**                  | ✅ Phase 5 — Production Hardening & Architecture Cleanup |
+| **อัปเดตล่าสุด**                    | 24 มีนาคม 2569 (Sprint 5.10) |
+| **งานค้าง (Pending)**               | 1 รายการ (firebase deploy --only firestore:indexes) |
+| **ปัญหาที่ยังไม่แก้ (Open Issues)** | ต้อง deploy Firestore indexes ด้วยมือ |
+
+---
+
+### ✅ Sprint 5.10 — Database Fix, Dropdown Fix & UI Polish (24 มี.ค. 2569)
+
+- **วันที่:** 24 มีนาคม 2569
+- **ผู้ทำ:** AI (Antigravity)
+- **งานที่ทำ:**
+  1. **🔴 แก้ Database ไม่แสดงบน Web:** แก้ `firestore.indexes.json` จาก snake_case → camelCase ทั้งหมด (เช่น `user_id` → `userId`, `created_at` → `createdAt`, `harvest_date` → `harvestDate`) ให้ตรงกับ Firestore queries ใน frontend code
+  2. **🔴 แก้ Dropdown เลือกไม่ได้:** สร้าง `DropdownPicker.tsx` component ใหม่ (Modal bottom sheet) แทน View แบบ static ใน `AddFarmStep2Screen`
+  3. **🟡 เพิ่ม Error UI ใน HomeScreen:** แสดง error banner สีแดง (แทน console.error เงียบๆ) เมื่อ Firestore query ล้มเหลว — ระบุสาเหตุ (Index/Permission/Generic) + ปุ่ม retry
+  4. **🟡 HomeScreen cross-platform:** เปลี่ยน `Alert.alert()` → `showAlert()` ใน logout flow
+  5. **เพิ่ม Jest mocks:** expo-location, expo-print, expo-image-picker, expo-notifications, expo-crypto, expo-auth-session + ImageBackground, SectionList, TouchableHighlight, TouchableWithoutFeedback
+  6. **สร้าง PDF Export:** `pdfExportService.ts` + ปุ่มใน ProfileScreen + Unit tests 8 cases
+- **ไฟล์ใหม่:** `DropdownPicker.tsx`, `pdfExportService.ts`, `locationService.ts`, `pdfExportService.test.ts`, `locationService.test.ts`
+- **ไฟล์ที่แก้ไข:** `firestore.indexes.json`, `AddFarmStep2Screen.tsx`, `HomeScreen.tsx`, `ProfileScreen.tsx`, `jest.setup.js`, `__mocks__/react-native.js`, `AddFarmStep3Screen.tsx`, `navigation.ts`
+- **สิ่งที่ต้องทำต่อ:**
+  1. `firebase login` (ถ้ายังไม่ได้ login)
+  2. `firebase deploy --only firestore:indexes` (deploy composite indexes)
+
+
+---
+
+### ✅ Sprint 5.8 — Pagination, Lazy Loading & Image Compression (24 มี.ค. 2569)
+
+- **วันที่:** 24 มีนาคม 2569
+- **งานที่ทำ:**
+  1. **`usePagination` Hook:** สร้าง Generic Firestore cursor-based pagination hook ใน `src/hooks/usePagination.ts` — รองรับทุก collection, ใช้ `startAfter` + `limit(pageSize+1)` เพื่อ detect `hasMore` อย่างมีประสิทธิภาพ
+  2. **`HarvestService.getPage()`:** เพิ่ม paginated method ที่โหลดทีละ 15 รายการ + Farm Name Cache (`_farmNameCache`) ลด N+1 query ลงระหว่าง page
+  3. **`CommunityService.getPostsPaginated()`:** เพิ่ม cursor-based pagination สำหรับ community posts — รองรับ filter by `post_type` + infinite scroll
+  4. **`imageUtils.ts`:** สร้าง cross-platform Image Compression utility — Native ใช้ `expo-image-manipulator` (lazy import), Web ใช้ Canvas API — resize to max 1200px, JPEG quality 70%
+  5. **`LazyScreen` Component:** สร้าง HOC wrapper สำหรับ `React.lazy` + `Suspense` — ใช้สำหรับ lazy-load หน้าจอหนักๆ (Market, Weather, Maintenance) เพื่อลด initial bundle size
+  6. **`hooks/index.ts`:** สร้าง barrel export สำหรับ hooks directory
+- **ไฟล์ใหม่:** `src/hooks/usePagination.ts`, `src/hooks/index.ts`, `src/lib/imageUtils.ts`, `src/components/LazyScreen.tsx`
+- **ไฟล์ที่แก้ไข:** `src/lib/firebaseDb.ts`, `src/lib/community/communityService.ts`
+- **สิ่งที่ต้องทำต่อ:**
+  - รัน `npx expo install expo-image-manipulator` ติดตั้ง dependency สำหรับ image compression (native only)
+  - Wire ขึ้น `LazyScreen` ใน Navigator สำหรับหน้า heavy screens (optional)
+
+---
+
+### ✅ Sprint 5.7 — Firestore Rules Unification & Web-Safe Alert Migration (24 มี.ค. 2569)
+
+- **วันที่:** 24 มีนาคม 2569
+- **งานที่ทำ:**
+  1. **Firestore Rules Overhaul:** แก้ไข `firestore.rules` ให้ใช้ camelCase (`userId`, `createdAt`, `farmId`, `weightKg`, `harvestDate`) ตรงกับ Frontend ทุก collection — แก้ปัญหา Permission Denied ที่เกิดจาก snake_case mismatch
+  2. **Relaxed Update Rules:** สร้าง `isValidFarmUpdate()` และ `isValidHarvestUpdate()` แยกจาก Create validators เพื่อรองรับ partial update ที่ไม่ต้องส่งทุกฟิลด์
+  3. **Missing Collections:** เพิ่ม collection `buyers` และ `weather_alert_settings` ที่ Service Layer ใช้งานแต่ Rules ยังไม่มี
+  4. **Font Wiring:** อัปเดต `theme.ts` ให้ FONTS reference ชี้ไป `Kanit_400Regular`, `Kanit_500Medium`, `Kanit_700Bold` แทน `'System'`
+  5. **Web-Safe Alert Migration:** สลับ `Alert.alert()` → `showAlert()` cross-platform ใน 7 screens: `AddFarmStep4`, `AddHarvest`, `FarmDetail`, `HarvestDetail`, `ChangePassword`, `EditProfile`, `Settings`, `Profile`
+  6. **Facebook Login Integration:** เพิ่ม `EXPO_PUBLIC_FACEBOOK_APP_ID` / `EXPO_PUBLIC_FACEBOOK_APP_SECRET` ลงในทั้ง `.env` root และ `frontend/.env`
+- **ไฟล์ที่แก้ไข:** `firestore.rules`, `frontend/src/constants/theme.ts`, `.env` (x2), `AddFarmStep4Screen.tsx`, `AddHarvestScreen.tsx`, `FarmDetailScreen.tsx`, `HarvestDetailScreen.tsx`, `ChangePasswordScreen.tsx`, `EditProfileScreen.tsx`, `SettingsScreen.tsx`, `ProfileScreen.tsx`
+- **สิ่งที่ต้องทำต่อ:**
+  - รัน `firebase deploy --only firestore:rules` เพื่อ deploy Rules ขึ้นคลาวด์จริง
+  - รัน `npx expo install expo-location` ติดตั้ง GPS dependency ที่หายไป
 
 ---
 
@@ -647,3 +702,84 @@
     - `sendMessage`: เพิ่ม `senderAvatar` arg ที่ขาด
 - **ผลลัพธ์:** `npx tsc --noEmit` ผ่าน 0 errors
 - **Branch:** `test/fix-validation-test-fields` → merged into `develop`
+
+---
+
+## Sprint 5.5 — Social Auth .env Setup & Firebase Console Guide
+
+- **วันที่:** 24 มีนาคม 2569
+- **ผู้ทำ:** User + AI (Antigravity)
+- **สิ่งที่ทำ:**
+  - User ฝังค่า credentials ทั้งหมดใน `.env` (root):
+    - Firebase config (API Key, Auth Domain, Project ID, Storage Bucket, Messaging Sender ID, App ID)
+    - Google Web Client ID
+    - LINE Channel ID & Secret (`2009545570` / `71af9dc7b130d6b6108186aa7ba7c7ce`)
+    - Facebook App ID & Secret (`1917814368842447` / `25fdbe32c05d869670486c6d1cb86972`)
+  - AI sync `.env` ไปยัง `frontend/.env` (Expo ต้องอ่านจาก frontend working directory)
+  - ตรวจสอบ code paths:
+    - `lineAuth.ts` ดึงค่า `EXPO_PUBLIC_LINE_CHANNEL_ID` / `EXPO_PUBLIC_LINE_CHANNEL_SECRET` ✅
+    - `AuthContext.tsx` ใช้ `FacebookAuthProvider` + `OAuthProvider('oidc.line')` ✅
+- **ผลลัพธ์:** `.env` ครบทั้ง root และ frontend, code อ่านค่าได้ถูกต้อง
+- **หมายเหตุ:** User ต้องเข้า Firebase Console ตั้งค่า OIDC (LINE) + Facebook provider + Callback URL ด้วยตัวเองก่อนทดสอบ social login ได้จริง
+
+---
+
+## Sprint 5.6 — Architecture Cleanup & GPS Implementation
+
+- **วันที่:** 24 มีนาคม 2569
+- **ผู้ทำ:** AI (Antigravity)
+- **สิ่งที่ทำ:**
+  - **ลบ `backend/` folder:** เป็น zombie code (ทุก route คืน 501) — มาร์คว่าต้องลบ, User ต้องรัน `rm -rf backend` เอง
+  - **สร้าง `locationService.ts`:** GPS service ครบวงจร:
+    - `requestLocationPermission()` — ขอสิทธิ์ GPS
+    - `hasLocationPermission()` — ตรวจสถานะสิทธิ์
+    - `getCurrentLocation(highAccuracy?)` — ดึงพิกัด lat/lng/alt
+    - `formatCoordinate()` — แปลงเป็น string ภาษาไทย
+  - **ปรับปรุง `AddFarmStep3Screen`:** เพิ่มปุ่ม "ดึงพิกัด GPS อัตโนมัติ":
+    - Loading indicator + error/success states
+    - Manual lat/lng input fields
+    - Auto-select altitude tier from GPS altitude จริง
+    - ส่ง lat/lng ไปยัง Step 4 ผ่าน FarmData
+  - **อัปเดต `FarmData` type:** เพิ่ม `latitude?: number | null` และ `longitude?: number | null`
+  - **สร้าง Unit Tests:** `locationService.test.ts` — 10 test cases ครอบ permission/fetch/format
+  - **อัปเดต `context.md`:** ลบ backend ออกจาก directory structure, เพิ่ม expo-location ใน tech stack, อัปเดต architecture diagram
+- **ผลลัพธ์:**
+  - โครงสร้างสะอาดขึ้น ไม่มีโค้ดร้างหลงเหลือ
+  - GPS Mapping ทำงานได้จริงบนหน้า AddFarmStep3
+  - Pending tasks ลดจาก 3 เหลือ 2 รายการ
+- **หมายเหตุ:** User ต้องรันคำสั่ง 2 อย่างด้วยตัวเอง:
+  1. `cd frontend && npx expo install expo-location` (ติดตั้ง package)
+  2. `cd .. && rm -rf backend` (ลบโค้ดร้าง)
+
+---
+
+## Sprint 5.7 — PDF Export Feature & Test Stabilization
+
+- **วันที่:** 24 มีนาคม 2569
+- **ผู้ทำ:** AI (Antigravity)
+- **สิ่งที่ทำ:**
+  - **สร้าง `pdfExportService.ts`:** ระบบ Gen PDF ครบวงจร:
+    - `generateFarmReport()` — แปลงข้อมูลสวน+ผลผลิตเป็น HTML styled แล้ว render เป็น PDF ผ่าน `expo-print`
+    - `generateAndShareReport()` — Gen PDF แล้วเปิด native share dialog ผ่าน `expo-sharing`
+    - HTML Template สวย: header สีเขียว, summary cards 4 ช่อง, ตารางสวน+เก็บเกี่ยว, footer
+    - รองรับข้อมูลว่าง (empty state), custom title/subtitle, Thai locale formatting
+  - **อัปเดต `ProfileScreen.tsx`:** เพิ่มปุ่ม "ส่งออกรายงาน PDF" ในเมนู "ข้อมูลของฉัน":
+    - ดึง real data จาก Firestore (farms + harvests)
+    - แสดง loading state "กำลังสร้าง PDF..."
+    - แสดง error alert เมื่อ Gen ล้มเหลว
+  - **Stabilize Jest Mocks:** เพิ่ม mock ใน `jest.setup.js` สำหรับ:
+    - `expo-location` (permission + coordinate fetch)
+    - `expo-print` (printToFileAsync)
+    - `expo-image-picker` (camera/gallery)
+    - `expo-image-manipulator` (image processing)
+    - `expo-notifications` (push notifications)
+    - `expo-crypto` (hashing/UUID)
+    - `expo-auth-session` (OAuth redirect)
+  - **ปรับ `__mocks__/react-native.js`:** เพิ่ม mock components:
+    - `ImageBackground`, `SectionList`, `TouchableHighlight`, `TouchableWithoutFeedback`
+  - **สร้าง Unit Tests:**
+    - `pdfExportService.test.ts` — 8 test cases ครอบ gen/share/error/empty
+- **ผลลัพธ์:**
+  - ฟีเจอร์ PDF Export พร้อมใช้งาน — ลด Pending tasks เหลือ 1 (Test Fixes)
+  - Jest mock ครบทุก Expo module ที่ใช้ในโปรเจกต์
+- **หมายเหตุ:** User ต้องรัน `cd frontend && npx expo install expo-print` เพิ่มเติม

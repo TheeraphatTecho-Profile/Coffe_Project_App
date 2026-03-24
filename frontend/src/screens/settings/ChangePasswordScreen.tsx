@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,17 +24,17 @@ export const ChangePasswordScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลให้ครบถ้วน');
+      showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert('รหัสผ่านไม่ถูกต้อง', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+      showAlert('รหัสผ่านไม่ถูกต้อง', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('รหัสผ่านไม่ตรงกัน', 'กรุณาตรวจสอบรหัสผ่านอีกครั้ง');
+      showAlert('รหัสผ่านไม่ตรงกัน', 'กรุณาตรวจสอบรหัสผ่านอีกครั้ง');
       return;
     }
 
@@ -41,11 +42,11 @@ export const ChangePasswordScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       // Note: Firebase password update would go here
       // For re-authentication, user would need to sign in again
-      Alert.alert('สำเร็จ', 'รหัสผ่านถูกเปลี่ยนเรียบร้อย', [
+      showAlert('สำเร็จ', 'รหัสผ่านถูกเปลี่ยนเรียบร้อย', [
         { text: 'ตกลง', onPress: () => navigation.goBack() }
       ]);
     } catch (err: any) {
-      Alert.alert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถเปลี่ยนรหัสผ่านได้');
+      showAlert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถเปลี่ยนรหัสผ่านได้');
     } finally {
       setLoading(false);
     }

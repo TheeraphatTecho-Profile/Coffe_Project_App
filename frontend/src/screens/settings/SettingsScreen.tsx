@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,7 +39,7 @@ export const SettingsScreen: React.FC = () => {
       return;
     }
 
-    Alert.alert(
+    showAlert(
       'ออกจากระบบ',
       'คุณต้องการออกจากระบบใช่หรือไม่?',
       [

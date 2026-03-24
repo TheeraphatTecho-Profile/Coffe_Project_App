@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,12 +29,12 @@ export const AddFarmStep4Screen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleSave = async () => {
     if (!farmData?.name || !farmData?.area) {
-      Alert.alert('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลสวนให้ครบถ้วน');
+      showAlert('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลสวนให้ครบถ้วน');
       return;
     }
 
     if (!user?.uid) {
-      Alert.alert('กรุณาเข้าสู่ระบบก่อน');
+      showAlert('กรุณาเข้าสู่ระบบก่อน');
       return;
     }
 
@@ -53,12 +54,12 @@ export const AddFarmStep4Screen: React.FC<Props> = ({ navigation, route }) => {
         notes: notes || null,
       });
 
-      Alert.alert('สำเร็จ', 'บันทึกข้อมูลสวนเรียบร้อยแล้ว', [
+      showAlert('สำเร็จ', 'บันทึกข้อมูลสวนเรียบร้อยแล้ว', [
         { text: 'ตกลง', onPress: () => navigation.popToTop() }
       ]);
     } catch (err: any) {
       console.error('Save farm error:', err);
-      Alert.alert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถบันทึกข้อมูลได้');
+      showAlert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถบันทึกข้อมูลได้');
     } finally {
       setLoading(false);
     }

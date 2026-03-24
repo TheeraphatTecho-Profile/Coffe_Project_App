@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -34,14 +35,14 @@ export const FarmDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       }
     } catch (err) {
       console.error('Error fetching farm:', err);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลสวนได้');
+      showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลสวนได้');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = () => {
-    Alert.alert(
+    showAlert(
       'ลบสวน',
       'คุณต้องการลบสวนนี้ใช่หรือไม่? การกระทำนี้ไม่สามารถยกเลิกได้',
       [
@@ -54,7 +55,7 @@ export const FarmDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               await FarmService.delete(farmId);
               navigation.goBack();
             } catch (err) {
-              Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถลบสวนได้');
+              showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถลบสวนได้');
             }
           },
         },
@@ -79,9 +80,9 @@ export const FarmDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       });
       setFarm(editData as any);
       setIsEditing(false);
-      Alert.alert('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย');
+      showAlert('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย');
     } catch (err) {
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้');
+      showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้');
     }
   };
 

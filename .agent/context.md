@@ -13,7 +13,7 @@
 | **วันที่เริ่ม**   | 1 มีนาคม 2569                          |
 | **เจ้าของ**       | qqkiller2006                           |
 | **จุดประสงค์**    | พัฒนา mobile app สำหรับเชื่อมต่อข้อมูล coffee_สวน ให้ผู้ใช้จัดการผ่านโทรศัพท์ |
-| **สถานะปัจจุบัน** | ✅ Phase 4 Complete — Community Feature & Persona Testing |
+| **สถานะปัจจุบัน** | ✅ Phase 5 — Production Hardening & Architecture Cleanup |
 
 ---
 
@@ -50,13 +50,14 @@
 | Navigation     | React Navigation | v7 | Stack + Bottom Tabs |
 | Database       | Firebase Firestore (JS SDK) | ^12.11 | เก็บข้อมูล coffee_สวน |
 | Auth           | Firebase Authentication | ^12.11 | Email, Google, Facebook, LINE |
+| Location       | expo-location | ~55.x | GPS coordinate fetching for farm mapping |
 | Animations     | React Native Reanimated | 4.2 | Splash, fade-in, stagger |
 | Testing        | Jest + custom mocks | ^29.7 | 11 suites, 105 tests |
 
 ### 3.2 แผนผังสถาปัตยกรรม (Architecture Diagram)
 
 ```
-[Mobile App (Expo/RN)] — Android + Web
+[Mobile App (Expo/RN)] — Android + Web (Serverless / No custom backend)
    ├── Auth Flow (Welcome → Login/Register → ForgotPassword)
    │   ├── Email/Password
    │   ├── Google (signInWithPopup)
@@ -64,7 +65,7 @@
    │   └── LINE (OAuthProvider OIDC)
    ├── Main Tabs (6 tabs)
    │   ├── Home (Dashboard with stats)
-   │   ├── My Farms → Add Farm (Step 1-4)
+   │   ├── My Farms → Add Farm (Step 1-4 + GPS)
    │   ├── Harvest (full CRUD + summary)
    │   ├── Community (feed, posts, comments, groups)
    │   ├── Price/Analytics (charts + AI insights)
@@ -72,9 +73,10 @@
    ├── Services
    │   ├── firebaseDb.ts (Firestore CRUD)
    │   ├── communityService.ts (community posts/comments/groups)
+   │   ├── locationService.ts (GPS coordinate fetching)
    │   ├── exportService.ts (CSV export)
    │   └── offlineService.ts (AsyncStorage cache)
-   └── [Firebase Backend]
+   └── [Firebase Backend (Serverless)]
        ├── Auth (Firebase Authentication)
        └── Firestore (farms + harvests + community collections)
 ```
@@ -101,34 +103,27 @@ Coffee_Project/
 │   │   ├── components/           # Reusable UI (Button, Input, PasswordStrength)
 │   │   ├── __tests__/            # Frontend tests
 │   │   │   ├── components/       # Button, Input, PasswordStrength tests
+│   │   │   ├── lib/              # Service tests (locationService, etc.)
 │   │   │   └── screens/          # Home, Harvest, Price, Profile tests
 │   │   ├── lib/                  # Firebase JS SDK + services
+│   │   │   ├── locationService.ts # GPS coordinate fetching
+│   │   │   └── ...               # firebaseDb, community, export, offline, etc.
 │   │   ├── types/                # Navigation type definitions
 │   │   ├── navigation/           # AppNavigator, AuthStack, MainTabs, FarmStack
 │   │   └── screens/
 │   │       ├── auth/             # Welcome, Login, Register, ForgotPassword, PrivacyPolicy
 │   │       ├── home/             # HomeScreen (Dashboard - dark theme)
-│   │       ├── farm/             # FarmList, AddFarmStep1-4
+│   │       ├── farm/             # FarmList, AddFarmStep1-4 (Step3 has GPS)
 │   │       ├── harvest/          # HarvestScreen (full UI from mockup)
 │   │       ├── price/            # PriceScreen/Analytics (full UI)
 │   │       └── profile/          # ProfileScreen (full UI)
 │   └── package.json
-├── backend/                      # 🚀 Node.js/Express API
-│   ├── package.json              # Backend deps + Jest config
-│   ├── tsconfig.json             # TypeScript config
-│   ├── jest.config.ts            # Test configuration
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── env.ts            # Environment validation
-│   │   ├── routes/
-│   │   │   ├── health.routes.ts  # Health check endpoint
-│   │   │   ├── farm.routes.ts    # Farm CRUD API
-│   │   │   └── harvest.routes.ts # Harvest CRUD + summary API
-│   │   ├── __tests__/            # Backend tests
-│   │   └── server.ts             # Express server entry
-│   └── dist/                     # Compiled JS output
+├── firestore.rules               # Firestore security rules
+├── firebase.json                 # Firebase project config
 └── skills-lock.json
 ```
+
+> ⚠️ **หมายเหตุ:** โฟลเดอร์ `backend/` ถูกลบออกใน Sprint 5.5 เนื่องจากเป็นโค้ดร้าง (ทุก route คืน 501) — แอปใช้ Firebase JS SDK ยิงตรงจาก frontend
 
 ---
 
@@ -164,6 +159,7 @@ Coffee_Project/
 | 2569-03-01 | AI (Antigravity) | สร้างไฟล์ context.md เริ่มต้น |
 | 2569-03-18 | AI (Cascade)     | เพิ่มบทบาท/กฎ Senior Mobile Dev |
 | 2569-03-19 | AI (Cascade)     | สร้าง Expo app ครบทุกหน้าจอจาก mockup, อัปเดต tech stack + directory structure |
+| 2569-03-24 | AI (Antigravity) | ลบ backend/ (zombie code), เพิ่ม expo-location + GPS ใน AddFarmStep3, อัปเดต architecture diagram |
 | 2569-03-19 | AI (Cascade)     | Restructure frontend/backend, setup Node.js/Express API, Jest testing, full UI screens (Harvest/Price/Profile) |
 | 2569-03-20 | AI (Cascade)     | Firebase migration: remove Supabase, use Firebase JS SDK for auth+db, add Facebook/LINE auth, animations, 105 unit tests |
 
