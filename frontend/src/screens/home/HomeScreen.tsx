@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   Platform,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FarmService, HarvestService, Harvest } from '../../lib/firebaseDb';
@@ -29,10 +29,12 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     farmCount: 0,
     harvestCount: 0,
   });
+  const [dataError, setDataError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user?.uid) return;
     try {
+      setDataError(null);
       const [farmCount, harvestSummary, harvests] = await Promise.all([
         FarmService.count(user.uid),
         HarvestService.getSummary(user.uid),
@@ -46,8 +48,16 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         harvestCount: harvests.length,
       });
       setRecentHarvests(harvests.slice(0, 5));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching home stats:', err);
+      const message = err?.message || '';
+      if (message.includes('index') || message.includes('requires an index')) {
+        setDataError('ต้องสร้าง Firestore Index ก่อน — รัน: firebase deploy --only firestore:indexes');
+      } else if (message.includes('permission') || message.includes('PERMISSION_DENIED')) {
+        setDataError('ไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาตรวจสอบ Firestore Rules');
+      } else {
+        setDataError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่');
+      }
     }
   }, [user]);
 
@@ -80,7 +90,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
       return;
     }
 
-    Alert.alert(
+    showAlert(
       'ออกจากระบบ',
       'คุณต้องการออกจากระบบใช่หรือไม่?',
       [
@@ -137,6 +147,15 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
               <Text style={styles.welcomeName}>สวัสดี, {userName}</Text>
               <Text style={styles.welcomeSub}>ข้อมูลสรุปจากฐานข้อมูลของคุณ</Text>
             </View>
+
+            {/* Error banner */}
+            {dataError && (
+              <TouchableOpacity style={styles.errorBanner} onPress={onRefresh}>
+                <Ionicons name="warning-outline" size={18} color="#FFF" />
+                <Text style={styles.errorText}>{dataError}</Text>
+                <Text style={styles.errorRetry}>แตะเพื่อลองใหม่</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Revenue card */}
             <View style={styles.revenueCard}>
@@ -266,6 +285,16 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
 const createStyles = (colors: any, spacing: any, typography: any, radius: any, shadows: any) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     safeArea: { flex: 1, backgroundColor: colors.coffeeBean },
+
+    // Error banner
+    errorBanner: {
+      marginHorizontal: spacing.xl, marginBottom: spacing.md,
+      backgroundColor: '#C62828', borderRadius: radius.lg,
+      padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+      flexWrap: 'wrap',
+    },
+    errorText: { flex: 1, fontSize: typography.sizes.sm, color: '#FFF', lineHeight: 18 },
+    errorRetry: { fontSize: typography.sizes.xs, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
 
     // Dark header section
     darkSection: { backgroundColor: colors.coffeeBean, paddingBottom: spacing.xxl },

@@ -15,13 +15,17 @@ const TouchableOpacity = createMockComponent('TouchableOpacity');
 const ScrollView = createMockComponent('ScrollView');
 const TextInput = createMockComponent('TextInput');
 const Image = createMockComponent('Image');
+const ImageBackground = createMockComponent('ImageBackground');
 const FlatList = createMockComponent('FlatList');
+const SectionList = createMockComponent('SectionList');
 const ActivityIndicator = createMockComponent('ActivityIndicator');
 const Switch = createMockComponent('Switch');
 const Modal = createMockComponent('Modal');
 const Pressable = createMockComponent('Pressable');
 const RefreshControl = createMockComponent('RefreshControl');
 const KeyboardAvoidingView = createMockComponent('KeyboardAvoidingView');
+const TouchableHighlight = createMockComponent('TouchableHighlight');
+const TouchableWithoutFeedback = createMockComponent('TouchableWithoutFeedback');
 
 // Enhanced StyleSheet mock that returns the input styles
 const StyleSheet = {
@@ -66,10 +70,14 @@ const mockReactNative = {
   View,
   Text,
   TouchableOpacity,
+  TouchableHighlight,
+  TouchableWithoutFeedback,
   ScrollView,
   TextInput,
   Image,
+  ImageBackground,
   FlatList,
+  SectionList,
   ActivityIndicator,
   Switch,
   Modal,

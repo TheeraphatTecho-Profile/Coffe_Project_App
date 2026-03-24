@@ -11,6 +11,7 @@ import {
   where,
   orderBy,
   limit,
+  startAfter,
   onSnapshot,
   serverTimestamp,
   increment,
@@ -18,6 +19,7 @@ import {
   arrayRemove,
   Timestamp,
   Firestore,
+  QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 // Auth context is used at the screen level, not in services
@@ -125,6 +127,77 @@ export const CommunityService = {
     } catch (error) {
       console.error('Error getting posts:', error);
       return [];
+    }
+  },
+
+  /**
+   * Paginated post fetching with cursor support (for infinite scroll).
+   */
+  async getPostsPaginated(
+    postType?: string,
+    pageSize: number = 15,
+    afterDoc?: QueryDocumentSnapshot | null
+  ): Promise<{
+    posts: CommunityPost[];
+    lastDoc: QueryDocumentSnapshot | null;
+    hasMore: boolean;
+  }> {
+    try {
+      const postsRef = collection(db, 'community_posts');
+      let q;
+
+      if (postType && afterDoc) {
+        q = query(
+          postsRef,
+          where('post_type', '==', postType),
+          orderBy('created_at', 'desc'),
+          startAfter(afterDoc),
+          limit(pageSize + 1)
+        );
+      } else if (postType) {
+        q = query(
+          postsRef,
+          where('post_type', '==', postType),
+          orderBy('created_at', 'desc'),
+          limit(pageSize + 1)
+        );
+      } else if (afterDoc) {
+        q = query(
+          postsRef,
+          orderBy('created_at', 'desc'),
+          startAfter(afterDoc),
+          limit(pageSize + 1)
+        );
+      } else {
+        q = query(
+          postsRef,
+          orderBy('created_at', 'desc'),
+          limit(pageSize + 1)
+        );
+      }
+
+      const snapshot = await getDocs(q);
+
+      const hasMore = snapshot.docs.length > pageSize;
+      const docs = hasMore ? snapshot.docs.slice(0, pageSize) : snapshot.docs;
+      const lastDocument = docs.length > 0 ? docs[docs.length - 1] : null;
+
+      let posts = docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+      })) as CommunityPost[];
+
+      // Sort pinned first
+      posts.sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        return 0;
+      });
+
+      return { posts, lastDoc: lastDocument, hasMore };
+    } catch (error) {
+      console.error('Error getting paginated posts:', error);
+      return { posts: [], lastDoc: null, hasMore: false };
     }
   },
 

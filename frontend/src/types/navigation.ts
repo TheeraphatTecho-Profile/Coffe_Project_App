@@ -39,6 +39,8 @@ export interface FarmData {
   province: string;
   district: string | null;
   altitude: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   variety: string | null;
   treeCount: number | null;
   plantingYear: number | null;

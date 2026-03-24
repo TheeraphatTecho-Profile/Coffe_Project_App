@@ -3,14 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ============================================================
-    // NAMING CONVENTION NOTE
-    // Legacy collections (farms, harvests, users, photos,
-    // notifications, push_tokens) use snake_case field names
-    // (e.g. user_id, farm_id) — matching their TypeScript interfaces.
-    // Newer collections (costs, maintenance_*, weather_*, market_*)
-    // use camelCase field names (e.g. userId, farmId) — matching
-    // their TypeScript interfaces.
-    // Both conventions are intentional and internally consistent.
+    // NAMING CONVENTION: camelCase for all data fields
+    // All collections use camelCase field names matching TypeScript
+    // interfaces (e.g. userId, farmId, createdAt, harvestDate).
+    // Exception: community_posts/comments use snake_case for
+    // author_id, post_type etc (legacy, kept for data compat).
     // ============================================================
 
     // ── Core helpers ──────────────────────────────────────────────
@@ -23,26 +20,36 @@ service cloud.firestore {
       return request.auth.uid == resourceUserId;
     }
 
-    // ── Legacy collection validators (snake_case) ─────────────────
+    // ── Farm & Harvest validators (camelCase — matches frontend) ──
 
     function isValidFarmData() {
       let d = request.resource.data;
-      return d.keys().hasAll(['name', 'area', 'province', 'user_id', 'created_at']) &&
+      return d.keys().hasAll(['name', 'area', 'province', 'userId']) &&
         d.name is string && d.name.size() > 0 && d.name.size() <= 100 &&
         d.area is number && d.area >= 0 && d.area <= 100000 &&
         d.province is string && d.province.size() > 0 &&
-        d.user_id is string && d.user_id == request.auth.uid;
+        d.userId is string && d.userId == request.auth.uid;
+    }
+
+    function isValidFarmUpdate() {
+      let d = request.resource.data;
+      return d.userId is string && d.userId == request.auth.uid;
     }
 
     function isValidHarvestData() {
       let d = request.resource.data;
-      return d.keys().hasAll(['farm_id', 'harvest_date', 'weight_kg', 'income', 'shift', 'user_id', 'created_at']) &&
-        d.farm_id is string && d.farm_id.size() > 0 &&
-        d.harvest_date is timestamp &&
-        d.weight_kg is number && d.weight_kg > 0 && d.weight_kg <= 50000 &&
+      return d.keys().hasAll(['farmId', 'harvestDate', 'weightKg', 'income', 'shift', 'userId']) &&
+        d.farmId is string && d.farmId.size() > 0 &&
+        (d.harvestDate is string || d.harvestDate is timestamp) &&
+        d.weightKg is number && d.weightKg > 0 && d.weightKg <= 50000 &&
         d.income is number && d.income >= 0 && d.income <= 10000000 &&
         d.shift in ['morning', 'afternoon', 'evening'] &&
-        d.user_id is string && d.user_id == request.auth.uid;
+        d.userId is string && d.userId == request.auth.uid;
+    }
+
+    function isValidHarvestUpdate() {
+      let d = request.resource.data;
+      return d.userId is string && d.userId == request.auth.uid;
     }
 
     // ── New collection validators (camelCase) ─────────────────────
@@ -133,19 +140,19 @@ service cloud.firestore {
 
     // ── farms ─────────────────────────────────────────────────────
     match /farms/{farmId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() && isValidFarmData();
-      allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidFarmData();
-      allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidFarmUpdate();
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
 
     // ── harvests ──────────────────────────────────────────────────
     match /harvests/{harvestId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() && isValidHarvestData();
-      allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidHarvestData();
-      allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidHarvestUpdate();
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
 
@@ -153,34 +160,31 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isAuthenticated() && userId == request.auth.uid;
       allow create: if isAuthenticated() &&
-        request.resource.data.keys().hasAll(['uid', 'email', 'created_at']) &&
-        request.resource.data.uid == request.auth.uid &&
-        request.resource.data.email is string &&
-        request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$');
+        request.resource.data.uid == request.auth.uid;
     }
 
     // ── photos ────────────────────────────────────────────────────
     match /photos/{photoId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() &&
-        request.resource.data.user_id == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid &&
         request.resource.data.type in ['farm', 'harvest', 'disease', 'pest', 'general'] &&
         request.resource.data.url is string &&
         request.resource.data.url.size() > 0 &&
         request.resource.data.url.size() <= 2048;
-      allow update: if isAuthenticated() && isOwner(resource.data.user_id);
-      allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
 
     // ── notifications ─────────────────────────────────────────────
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() &&
-        request.resource.data.user_id == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid &&
         request.resource.data.type in ['harvest', 'care', 'weather', 'price', 'system'];
-      allow update: if isAuthenticated() && isOwner(resource.data.user_id);
-      allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
 
@@ -292,6 +296,24 @@ service cloud.firestore {
       allow list: if isAuthenticated();
     }
 
+    // ── buyers (used by marketService.ts) ─────────────────────────
+    match /buyers/{buyerId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidBuyerData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow list: if isAuthenticated();
+    }
+
+    // ── weather_alert_settings (used by weatherAlertService.ts) ───
+    match /weather_alert_settings/{settingId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow list: if isAuthenticated();
+    }
+
     // ── community_posts ───────────────────────────────────────────
     match /community_posts/{postId} {
       allow read: if isAuthenticated();
@@ -359,9 +381,9 @@ service cloud.firestore {
 
     // ── push_tokens ───────────────────────────────────────────────
     match /push_tokens/{tokenId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create, update: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create, update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow list: if false;
     }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -34,14 +35,14 @@ export const HarvestDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       }
     } catch (err) {
       console.error('Error fetching harvest:', err);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
+      showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = () => {
-    Alert.alert(
+    showAlert(
       'ลบรายการ',
       'คุณต้องการลบรายการผลผลิตนี้ใช่หรือไม่?',
       [
@@ -54,7 +55,7 @@ export const HarvestDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               await HarvestService.delete(harvestId);
               navigation.goBack();
             } catch (err) {
-              Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถลบได้');
+              showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถลบได้');
             }
           },
         },
@@ -74,9 +75,9 @@ export const HarvestDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       });
       setHarvest(editData as any);
       setIsEditing(false);
-      Alert.alert('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย');
+      showAlert('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย');
     } catch (err) {
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้');
+      showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้');
     }
   };
 

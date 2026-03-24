@@ -282,7 +282,7 @@ export const HarvestScreen: React.FC = () => {
               style={styles.addButton}
               onPress={async () => {
                 try {
-                  await ExportService.exportHarvests(
+                  await ExportService.exportHarvestsPDF(
                     filteredHarvests,
                     filters.year !== 'ทั้งหมด' ? filters.year : undefined
                   );

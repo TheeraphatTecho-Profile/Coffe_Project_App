@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Platform } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { useAuth } from '../../context/AuthContext';
 import { FarmService, HarvestService } from '../../lib/firebaseDb';
+import { generateAndShareReport, PdfFarmData, PdfHarvestData } from '../../lib/pdfExportService';
 
 const APP_VERSION = 'V2.4.0';
 
@@ -25,6 +27,7 @@ export const ProfileScreen: React.FC = () => {
   const [harvestCount, setHarvestCount] = useState(0);
   const [totalIncome, setTotalIncome] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const fetchProfileData = useCallback(async () => {
     if (!user?.uid) return;
@@ -71,7 +74,7 @@ export const ProfileScreen: React.FC = () => {
       return;
     }
 
-    Alert.alert(
+    showAlert(
       'ออกจากระบบ',
       'คุณต้องการออกจากระบบใช่หรือไม่?',
       [
@@ -87,6 +90,56 @@ export const ProfileScreen: React.FC = () => {
     );
   };
 
+  const handleExportPdf = async () => {
+    if (!user?.uid) return;
+    setExporting(true);
+    try {
+      const [farms, harvests] = await Promise.all([
+        FarmService.getAll(user.uid),
+        HarvestService.getAll(user.uid),
+      ]);
+
+      const pdfFarms: PdfFarmData[] = farms.map((f: any) => ({
+        id: f.id,
+        name: f.name ?? 'ไม่ระบุชื่อ',
+        area: f.area ?? 0,
+        province: f.province ?? '-',
+        district: f.district,
+        altitude: f.altitude,
+        variety: f.variety,
+        treeCount: f.treeCount,
+        latitude: f.latitude,
+        longitude: f.longitude,
+      }));
+
+      const pdfHarvests: PdfHarvestData[] = harvests.map((h: any) => ({
+        id: h.id,
+        farmName: h.farmName,
+        harvestDate: h.harvestDate ?? '-',
+        weightKg: h.weightKg ?? 0,
+        pricePerKg: h.pricePerKg,
+        quality: h.quality,
+        notes: h.notes,
+      }));
+
+      const result = await generateAndShareReport(pdfFarms, pdfHarvests, {
+        generatedBy: user.displayName || user.email || undefined,
+      });
+
+      if (!result.success) {
+        if (Platform.OS === 'web') {
+          globalThis.alert?.(result.error);
+        } else {
+          showAlert('ข้อผิดพลาด', result.error);
+        }
+      }
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const GENERAL_SETTINGS: MenuItem[] = [
     { icon: 'person-outline', label: 'แก้ไขโปรไฟล์', onPress: () => { /* TODO: navigate to EditProfile */ } },
     { icon: 'notifications-outline', label: 'การแจ้งเตือน', onPress: () => { /* TODO: navigate to Notifications */ } },
@@ -97,6 +150,7 @@ export const ProfileScreen: React.FC = () => {
     { icon: 'leaf-outline', label: 'สวนของฉัน', detail: `${farmCount} แห่ง`, onPress: () => { try { navigation.navigate('Main', { screen: 'FarmTab' }); } catch { /* noop */ } } },
     { icon: 'basket-outline', label: 'ประวัติเก็บเกี่ยว', detail: `${harvestCount} รายการ`, onPress: () => { try { navigation.navigate('Main', { screen: 'HarvestTab' }); } catch { /* noop */ } } },
     { icon: 'bar-chart-outline', label: 'รายงานวิเคราะห์', onPress: () => { try { navigation.navigate('Main', { screen: 'PriceTab' }); } catch { /* noop */ } } },
+    { icon: 'document-text-outline', label: exporting ? 'กำลังสร้าง PDF...' : 'ส่งออกรายงาน PDF', detail: 'สรุปข้อมูลสวนและผลผลิต', onPress: handleExportPdf },
   ];
 
   const renderMenuItem = (item: MenuItem, index: number) => (
