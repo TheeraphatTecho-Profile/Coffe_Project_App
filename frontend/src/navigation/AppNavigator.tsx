@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
@@ -6,22 +6,50 @@ import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 import { SettingsStack } from './SettingsStack';
 import { useAuth } from '../context/AuthContext';
-// Cost screens
-import { CostListScreen } from '../screens/cost/CostListScreen';
-import { AddCostScreen } from '../screens/cost/AddCostScreen';
-import { CostAnalyticsScreen } from '../screens/cost/CostAnalyticsScreen';
-// Maintenance screens
-import { MaintenanceDashboardScreen } from '../screens/maintenance/MaintenanceDashboardScreen';
-import { MaintenanceCalendarScreen } from '../screens/maintenance/MaintenanceCalendarScreen';
-import { AddMaintenanceTaskScreen } from '../screens/maintenance/AddMaintenanceTaskScreen';
-// Weather screens
-import { WeatherAlertsScreen } from '../screens/weather/WeatherAlertsScreen';
-import { WeatherAlertSettingsScreen } from '../screens/weather/WeatherAlertSettingsScreen';
-// Market screens
-import { MarketIntelligenceScreen } from '../screens/market/MarketIntelligenceScreen';
-import { BuyerManagementScreen } from '../screens/market/BuyerManagementScreen';
-// Community (nested navigator for notification deep-links)
-import { CommunityStack } from './CommunityStack';
+// Cost screens — lazy loaded
+const CostListScreen = React.lazy(() =>
+  import('../screens/cost/CostListScreen').then(m => ({ default: m.CostListScreen }))
+);
+const AddCostScreen = React.lazy(() =>
+  import('../screens/cost/AddCostScreen').then(m => ({ default: m.AddCostScreen }))
+);
+const CostAnalyticsScreen = React.lazy(() =>
+  import('../screens/cost/CostAnalyticsScreen').then(m => ({ default: m.CostAnalyticsScreen }))
+);
+// Maintenance screens — lazy loaded
+const MaintenanceDashboardScreen = React.lazy(() =>
+  import('../screens/maintenance/MaintenanceDashboardScreen').then(m => ({ default: m.MaintenanceDashboardScreen }))
+);
+const MaintenanceCalendarScreen = React.lazy(() =>
+  import('../screens/maintenance/MaintenanceCalendarScreen').then(m => ({ default: m.MaintenanceCalendarScreen }))
+);
+const AddMaintenanceTaskScreen = React.lazy(() =>
+  import('../screens/maintenance/AddMaintenanceTaskScreen').then(m => ({ default: m.AddMaintenanceTaskScreen }))
+);
+// Weather screens — lazy loaded
+const WeatherAlertsScreen = React.lazy(() =>
+  import('../screens/weather/WeatherAlertsScreen').then(m => ({ default: m.WeatherAlertsScreen }))
+);
+const WeatherAlertSettingsScreen = React.lazy(() =>
+  import('../screens/weather/WeatherAlertSettingsScreen').then(m => ({ default: m.WeatherAlertSettingsScreen }))
+);
+// Market screens — lazy loaded
+const MarketIntelligenceScreen = React.lazy(() =>
+  import('../screens/market/MarketIntelligenceScreen').then(m => ({ default: m.MarketIntelligenceScreen }))
+);
+const BuyerManagementScreen = React.lazy(() =>
+  import('../screens/market/BuyerManagementScreen').then(m => ({ default: m.BuyerManagementScreen }))
+);
+// Community deep-link — lazy loaded
+const CommunityStack = React.lazy(() =>
+  import('./CommunityStack').then(m => ({ default: m.CommunityStack }))
+);
+
+const LazyFallback = () => (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color="#6B4226" />
+  </View>
+);
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -37,6 +65,7 @@ export const AppNavigator: React.FC = () => {
   }
 
   return (
+    <Suspense fallback={<LazyFallback />}>
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
         <>
@@ -63,6 +92,7 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen name="Auth" component={AuthStack} />
       )}
     </Stack.Navigator>
+    </Suspense>
   );
 };
 
