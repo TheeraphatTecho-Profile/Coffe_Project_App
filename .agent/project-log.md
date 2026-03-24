@@ -579,3 +579,71 @@
   - ตรวจ `npx tsc --noEmit` และ auth tests หลังแก้
 - **ผลลัพธ์:** เลี่ยงปัญหา redirect result หายบน localhost web โดยเปลี่ยน dev flow ไปใช้ popup ซึ่งไม่ต้องพึ่ง redirect state restore ข้าม origin
 - **หมายเหตุ:** production/custom domain ยังใช้ redirect fallback ได้ตามเดิม
+
+---
+
+## Sprint 5.1 — Firestore Rules Hardening (fix/firestore-rules-validation)
+
+- **วันที่:** Sprint 5 — Production Readiness Phase
+- **สิ่งที่ทำ:**
+  - เพิ่ม validator functions 9 ตัวใน `firestore.rules`:
+    `isValidCostData()`, `isValidMaintenanceTaskData()`, `isValidMaintenanceCalendarData()`,
+    `isValidMaintenanceEquipmentData()`, `isValidWeatherAlertData()`, `isValidWeatherSettingsData()`,
+    `isValidBuyerData()`, `isValidMarketPriceData()`, `isValidMarketTransactionData()`
+  - ครอบ `allow create` และ `allow update` ด้วย validator ทุก collection ที่ขาด validation
+  - เพิ่ม `hasAll`, `is string/number/bool`, bounds check ให้ครบทุก field สำคัญ
+  - เพิ่ม naming convention comment block อธิบาย snake_case (legacy) vs camelCase (new collections)
+  - ขยาย harvest `shift` enum ให้รวม `'evening'`
+  - เพิ่ม URL size limit ใน photos, content size limit ใน messages
+- **ผลลัพธ์:** 12 collections ที่เคยมีแค่ auth check ตอนนี้มี full validation ระดับ production
+- **Branch:** `fix/firestore-rules-validation` → merged into `develop`
+
+---
+
+## Sprint 5.2 — Google Fonts Kanit Integration (feat/kanit-google-font)
+
+- **สิ่งที่ทำ:**
+  - ติดตั้ง `@expo-google-fonts/kanit` ผ่าน `npx expo install`
+  - อัปเดต `frontend/src/constants/theme.ts`:
+    - เปลี่ยน `FONTS.regular/medium/bold` จาก `'System'` เป็น Kanit family names
+    - เพิ่ม `FONTS.semiBold = 'Kanit_600SemiBold'`
+    - เพิ่ม `FONTS.weights` map สำหรับ typed fontWeight values
+  - อัปเดต `frontend/App.tsx`:
+    - เพิ่ม `useFonts` hook โหลด 4 Kanit variants (400/500/600/700)
+    - แสดง `ActivityIndicator` ระหว่าง fonts loading
+    - Apply `Kanit_400Regular` เป็น default `fontFamily` ทั่วทั้งแอปผ่าน `Text.defaultProps`
+- **ผลลัพธ์:** ทุก `<Text>` component ในแอปใช้ Kanit font โดยอัตโนมัติ ไม่ต้องแก้ทีละ screen
+- **Branch:** `feat/kanit-google-font` → merged into `develop`
+
+---
+
+## Sprint 5.3 — HarvestScreen CRUD Actions (fix/harvest-crud-actions)
+
+- **สิ่งที่ทำ:**
+  - ตรวจพบ action buttons (edit/delete) ใน `renderHarvestItem` ของ `HarvestScreen.tsx` เป็น empty `TouchableOpacity`
+  - เพิ่ม `handleDeleteHarvest` callback:
+    - ใช้ `showAlert` (web-safe) แสดง confirm dialog
+    - เรียก `HarvestService.delete(id)` หลังยืนยัน
+    - อัปเดต local state ลบ item ออกทันที (optimistic UI)
+  - Wire edit button → `navigation.navigate('HarvestDetail', { harvestId: h.id })`
+    (`HarvestDetailScreen` มี inline edit อยู่แล้ว)
+  - Import `showAlert` จาก `../../lib/alert`
+- **ผลลัพธ์:** HarvestScreen CRUD actions ทำงานครบทั้ง Read/Edit/Delete
+- **Branch:** cherry-picked → `develop`
+
+---
+
+## Sprint 5.4 — TypeScript Error Fixes (test/fix-validation-test-fields)
+
+- **สิ่งที่ทำ:**
+  - แก้ duplicate `showAlert` import ใน `HarvestScreen.tsx` (line 2 vs line 19)
+  - แก้ `harvest_date` → `harvestDate`, `weight_kg` → `weightKg` ใน `HomeScreen.tsx`
+    (Harvest interface ใช้ camelCase ตาม `firebaseDb.ts`)
+  - อัปเดต mock data ใน `MessagingScreen.test.tsx` ให้ตรงกับ actual interfaces:
+    - `participants`: `string[]` → `{id, name}[]`
+    - `last_message`: `string` → `{content, sender_id, created_at}`
+    - `unread_count`: `{userId: number}` → `number`
+    - `read_by: string[]` → `read: boolean`
+    - `sendMessage`: เพิ่ม `senderAvatar` arg ที่ขาด
+- **ผลลัพธ์:** `npx tsc --noEmit` ผ่าน 0 errors
+- **Branch:** `test/fix-validation-test-fields` → merged into `develop`
