@@ -10,9 +10,31 @@
 | หัวข้อ                              | สถานะ                      |
 | ----------------------------------- | -------------------------- |
 | **Phase ปัจจุบัน**                  | ✅ Phase 5 — Production Hardening & Architecture Cleanup |
-| **อัปเดตล่าสุด**                    | 24 มีนาคม 2569 (Sprint 5.10) |
-| **งานค้าง (Pending)**               | 1 รายการ (firebase deploy --only firestore:indexes) |
-| **ปัญหาที่ยังไม่แก้ (Open Issues)** | ต้อง deploy Firestore indexes ด้วยมือ |
+| **อัปเดตล่าสุด**                    | 24 มีนาคม 2569 (Sprint 5.11) |
+| **งานค้าง (Pending)**               | 0 รายการ |
+| **ปัญหาที่ยังไม่แก้ (Open Issues)** | ไม่มีปัญหาค้างระดับ blocker |
+
+---
+
+### ✅ Sprint 5.11 — Firestore Deploy Complete & Full Test Pass (24 มี.ค. 2569)
+
+- **วันที่:** 24 มีนาคม 2569
+- **ผู้ทำ:** User + AI (Cascade)
+- **งานที่ทำ:**
+  1. **Deploy Firestore Rules สำเร็จ:** User รัน `firebase login` และ `firebase deploy --only firestore:rules` สำเร็จบน project `coffee-project-cfcc7`
+  2. **แก้ Index Deploy Error:** ลบ single-field index ของ `community_posts.createdAt` ออกจาก `firestore.indexes.json` เพราะ Firestore มองว่าไม่จำเป็นและ reject ด้วย HTTP 400
+  3. **Deploy Firestore Indexes สำเร็จ:** User รัน `firebase deploy --only firestore:indexes` สำเร็จ
+  4. **Delete Legacy Snake Case Indexes:** ลบ indexes เก่าใน production ที่ยังเป็น `farm_id`, `user_id`, `harvest_date`, `created_at` และแทนด้วย camelCase indexes ที่ตรงกับ frontend queries
+  5. **Fix Remaining Type / Test Failures:**
+    - แก้ snake_case → camelCase ใน `ServiceIntegration.test.tsx`
+    - เคลียร์ `HarvestService._farmNameCache` ใน `firebaseDb.test.ts` เพื่อกัน cross-test pollution
+    - ตรวจ `npx tsc --noEmit` ผ่าน 0 errors
+    - รัน `npx jest --no-coverage --forceExit` ผ่านทั้งหมด
+- **ผลลัพธ์:**
+  - Firestore rules + indexes บน production ตรงกับ frontend code แล้ว
+  - Test suite เสถียร: **47 suites, 481 tests passed**
+  - โปรเจกต์อยู่ในสถานะพร้อมพัฒนาต่อ / พร้อม push ขึ้น remote
+- **ไฟล์ที่เกี่ยวข้อง:** `firestore.rules`, `firestore.indexes.json`, `frontend/src/__tests__/integration/ServiceIntegration.test.tsx`, `frontend/src/__tests__/lib/firebaseDb.test.ts`
 
 ---
 
@@ -32,7 +54,6 @@
 - **สิ่งที่ต้องทำต่อ:**
   1. `firebase login` (ถ้ายังไม่ได้ login)
   2. `firebase deploy --only firestore:indexes` (deploy composite indexes)
-
 
 ---
 

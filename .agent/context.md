@@ -51,8 +51,10 @@
 | Database       | Firebase Firestore (JS SDK) | ^12.11 | เก็บข้อมูล coffee_สวน |
 | Auth           | Firebase Authentication | ^12.11 | Email, Google, Facebook, LINE |
 | Location       | expo-location | ~55.x | GPS coordinate fetching for farm mapping |
+| PDF Export     | expo-print + expo-sharing | ~55.x | Generate and share PDF farm reports |
+| Image Utils    | expo-image-manipulator | ~55.x | Compress uploaded images on native |
 | Animations     | React Native Reanimated | 4.2 | Splash, fade-in, stagger |
-| Testing        | Jest + custom mocks | ^29.7 | 11 suites, 105 tests |
+| Testing        | Jest + custom mocks | ^29.7 | 47 suites, 481 tests |
 
 ### 3.2 แผนผังสถาปัตยกรรม (Architecture Diagram)
 
@@ -75,6 +77,8 @@
    │   ├── communityService.ts (community posts/comments/groups)
    │   ├── locationService.ts (GPS coordinate fetching)
    │   ├── exportService.ts (CSV export)
+   │   ├── pdfExportService.ts (HTML → PDF export + share)
+   │   ├── imageUtils.ts (image compression / optimization)
    │   └── offlineService.ts (AsyncStorage cache)
    └── [Firebase Backend (Serverless)]
        ├── Auth (Firebase Authentication)
@@ -105,8 +109,11 @@ Coffee_Project/
 │   │   │   ├── components/       # Button, Input, PasswordStrength tests
 │   │   │   ├── lib/              # Service tests (locationService, etc.)
 │   │   │   └── screens/          # Home, Harvest, Price, Profile tests
+│   │   ├── hooks/                # Pagination and reusable hooks
 │   │   ├── lib/                  # Firebase JS SDK + services
 │   │   │   ├── locationService.ts # GPS coordinate fetching
+│   │   │   ├── pdfExportService.ts # PDF report generation + sharing
+│   │   │   ├── imageUtils.ts     # Image compression utilities
 │   │   │   └── ...               # firebaseDb, community, export, offline, etc.
 │   │   ├── types/                # Navigation type definitions
 │   │   ├── navigation/           # AppNavigator, AuthStack, MainTabs, FarmStack
@@ -131,7 +138,7 @@ Coffee_Project/
 
 | Environment | URL / Path                         | หมายเหตุ      |
 | ----------- | ---------------------------------- | ------------- |
-| Development | `/home/qqkiller2006/data/github_backup/Mobile-Application/Coffee_Project/coffee-app` | เครื่อง local |
+| Development | `/home/qqkiller2006/data/github_backup/Mobile-Application/Coffee_Project/frontend` | เครื่อง local |
 | Staging     | (ระบุ เมื่อมี)                     | —             |
 | Production  | (ระบุ เมื่อมี)                     | —             |
 
@@ -160,6 +167,7 @@ Coffee_Project/
 | 2569-03-18 | AI (Cascade)     | เพิ่มบทบาท/กฎ Senior Mobile Dev |
 | 2569-03-19 | AI (Cascade)     | สร้าง Expo app ครบทุกหน้าจอจาก mockup, อัปเดต tech stack + directory structure |
 | 2569-03-24 | AI (Antigravity) | ลบ backend/ (zombie code), เพิ่ม expo-location + GPS ใน AddFarmStep3, อัปเดต architecture diagram |
+| 2569-03-24 | AI (Cascade)     | เพิ่ม expo-print / expo-sharing / expo-image-manipulator, อัปเดต test count เป็น 47 suites / 481 tests, เพิ่ม PDF/Image services |
 | 2569-03-19 | AI (Cascade)     | Restructure frontend/backend, setup Node.js/Express API, Jest testing, full UI screens (Harvest/Price/Profile) |
 | 2569-03-20 | AI (Cascade)     | Firebase migration: remove Supabase, use Firebase JS SDK for auth+db, add Facebook/LINE auth, animations, 105 unit tests |
 
