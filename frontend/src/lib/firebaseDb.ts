@@ -26,9 +26,16 @@ export interface Farm {
   area: number;
   soilType: string | null;
   waterSource: string | null;
+  waterDetail?: string | null;
+  hasWaterSource?: boolean;
+  irrigations?: string[];
+  hasIrrigation?: boolean;
   province: string;
   district: string | null;
+  subDistrict?: string | null;
   altitude: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   variety: string | null;
   treeCount: number | null;
   plantingYear: number | null;
@@ -51,6 +58,30 @@ export interface Harvest {
   farms?: { name: string };
 }
 
+ const normalizeFarm = (id: string, data: Partial<Farm> & Record<string, any>): Farm => ({
+  id,
+  name: data.name ?? '',
+  area: data.area ?? 0,
+  soilType: data.soilType ?? null,
+  waterSource: data.waterSource ?? null,
+  waterDetail: data.waterDetail ?? null,
+  hasWaterSource: data.hasWaterSource ?? Boolean(data.waterSource),
+  irrigations: Array.isArray(data.irrigations) ? data.irrigations : [],
+  hasIrrigation: data.hasIrrigation ?? false,
+  province: data.province ?? '',
+  district: data.district ?? null,
+  subDistrict: data.subDistrict ?? null,
+  altitude: data.altitude ?? null,
+  latitude: data.latitude ?? null,
+  longitude: data.longitude ?? null,
+  variety: data.variety ?? null,
+  treeCount: data.treeCount ?? null,
+  plantingYear: data.plantingYear ?? null,
+  notes: data.notes ?? null,
+  createdAt: data.createdAt as Timestamp,
+  userId: data.userId ?? '',
+ });
+
 export const FarmService = {
   /**
    * Get all farms for a specific user.
@@ -58,7 +89,7 @@ export const FarmService = {
   async getAll(userId: string): Promise<Farm[]> {
     const q = query(farmsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Farm));
+    return snapshot.docs.map(d => normalizeFarm(d.id, d.data() as Partial<Farm> & Record<string, any>));
   },
 
   /**
@@ -67,20 +98,30 @@ export const FarmService = {
   async getById(id: string): Promise<Farm | null> {
     const docSnap = await getDoc(doc(db, 'farms', id));
     if (!docSnap.exists()) return null;
-    return { id: docSnap.id, ...docSnap.data() } as Farm;
+    return normalizeFarm(docSnap.id, docSnap.data() as Partial<Farm> & Record<string, any>);
   },
 
   /**
    * Create a new farm.
    */
   async create(userId: string, data: Omit<Farm, 'id' | 'createdAt' | 'userId'>): Promise<Farm> {
-    const docRef = await addDoc(farmsRef, {
+    const farmPayload = {
       ...data,
+      waterDetail: data.waterDetail ?? null,
+      hasWaterSource: data.hasWaterSource ?? Boolean(data.waterSource),
+      irrigations: data.irrigations ?? [],
+      hasIrrigation: data.hasIrrigation ?? false,
+      subDistrict: data.subDistrict ?? null,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
       userId: userId,
       createdAt: serverTimestamp(),
+    };
+    const docRef = await addDoc(farmsRef, {
+      ...farmPayload,
     });
     const docSnap = await getDoc(docRef);
-    return { id: docSnap.id, ...docSnap.data() } as Farm;
+    return normalizeFarm(docSnap.id, docSnap.data() as Partial<Farm> & Record<string, any>);
   },
 
   /**

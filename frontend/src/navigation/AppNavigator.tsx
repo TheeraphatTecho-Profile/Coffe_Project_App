@@ -44,6 +44,16 @@ const BuyerManagementScreen = React.lazy(() =>
 const CommunityStack = React.lazy(() =>
   import('./CommunityStack').then(m => ({ default: m.CommunityStack }))
 );
+// Production screens — lazy loaded
+const AddFreshSaleScreen = React.lazy(() =>
+  import('../screens/production/AddFreshSaleScreen').then(m => ({ default: m.AddFreshSaleScreen }))
+);
+const AddProcessedProductScreen = React.lazy(() =>
+  import('../screens/production/AddProcessedProductScreen').then(m => ({ default: m.AddProcessedProductScreen }))
+);
+const AnnualReportScreen = React.lazy(() =>
+  import('../screens/production/AnnualReportScreen').then(m => ({ default: m.AnnualReportScreen }))
+);
 
 const LazyFallback = () => (
   <View style={styles.loadingContainer}>
@@ -87,6 +97,10 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="BuyerManagement" component={BuyerManagementScreen} />
           {/* Community deep-link from notifications */}
           <Stack.Screen name="Community" component={CommunityStack} />
+          {/* Production */}
+          <Stack.Screen name="AddFreshSale" component={AddFreshSaleScreen} />
+          <Stack.Screen name="AddProcessedProduct" component={AddProcessedProductScreen} />
+          <Stack.Screen name="AnnualReport" component={AnnualReportScreen} />
         </>
       ) : (
         <Stack.Screen name="Auth" component={AuthStack} />

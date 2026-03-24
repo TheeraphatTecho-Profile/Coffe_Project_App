@@ -420,6 +420,40 @@ service cloud.firestore {
       allow list: if false;
     }
 
+    // ── user_profiles (farmer profile with citizenId etc.) ────────
+    match /user_profiles/{profileId} {
+      allow read: if isAuthenticated() && profileId == request.auth.uid;
+      allow create: if isAuthenticated() && profileId == request.auth.uid &&
+        request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && profileId == request.auth.uid;
+      allow delete: if false;
+      allow list: if isAuthenticated();
+    }
+
+    // ── fresh_sales (ขายผลสด) ──────────────────────────────────
+    match /fresh_sales/{saleId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.weightKg is number && request.resource.data.weightKg > 0 &&
+        request.resource.data.pricePerKg is number && request.resource.data.pricePerKg >= 0;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow list: if isAuthenticated();
+    }
+
+    // ── processed_products (ผลิตภัณฑ์แปรรูป) ───────────────────
+    match /processed_products/{productId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.productName is string && request.resource.data.productName.size() > 0 &&
+        request.resource.data.quantity is number && request.resource.data.quantity > 0;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow list: if isAuthenticated();
+    }
+
     // ── deny all other access ─────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;

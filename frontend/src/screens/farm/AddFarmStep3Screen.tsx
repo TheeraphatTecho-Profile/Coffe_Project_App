@@ -84,6 +84,7 @@ export const AddFarmStep3Screen: React.FC<Props> = ({ navigation, route }) => {
       ...route.params.farmData,
       province,
       district: district.trim() || null,
+      subDistrict: subDistrict.trim() || null,
       altitude: altitude ? (altitude === 'low' ? 300 : altitude === 'medium' ? 600 : 900) : null,
       ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
     };

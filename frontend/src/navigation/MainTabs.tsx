@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MainTabParamList } from '../types/navigation';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { FarmStack } from './FarmStack';
-import { HarvestScreen } from '../screens/harvest/HarvestScreen';
+import { HarvestStack } from './HarvestStack';
 import { CommunityStack } from './CommunityStack';
 import { PriceScreen } from '../screens/price/PriceScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -54,7 +54,7 @@ export const MainTabs: React.FC = () => {
       />
       <Tab.Screen
         name="HarvestTab"
-        component={HarvestScreen}
+        component={HarvestStack}
         options={{ tabBarLabel: 'เก็บเกี่ยว' }}
       />
       <Tab.Screen

@@ -6,20 +6,20 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Platform,
 } from 'react-native';
-import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FarmService, HarvestService, Harvest } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
+import { useLogout } from '../../hooks';
 import { useTheme } from '../../theme/ThemeProvider';
 import { AnimatedButton } from '../../components/AnimatedButton';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { Logo } from '../../components/Logo';
 
 export const HomeScreen: React.FC<any> = ({ navigation }) => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { requestLogout, isLoggingOut } = useLogout();
   const { colors, spacing, typography, radius, shadows } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [recentHarvests, setRecentHarvests] = useState<Harvest[]>([]);
@@ -71,35 +71,6 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
     setRefreshing(false);
   };
 
-  const handleLogout = () => {
-    const doLogout = async () => {
-      try {
-        await signOut();
-      } catch (err) {
-        console.error('Logout failed:', err);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      const confirmed = typeof globalThis.confirm === 'function'
-        ? globalThis.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')
-        : true;
-      if (confirmed) {
-        void doLogout();
-      }
-      return;
-    }
-
-    showAlert(
-      'ออกจากระบบ',
-      'คุณต้องการออกจากระบบใช่หรือไม่?',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'ออกจากระบบ', style: 'destructive', onPress: () => { void doLogout(); } },
-      ]
-    );
-  };
-
   const formatNumber = (n: number): string => n.toLocaleString('th-TH');
   const formatCurrency = (n: number): string => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -134,7 +105,8 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.headerLogout}
-                  onPress={handleLogout}
+                  onPress={requestLogout}
+                  disabled={isLoggingOut}
                 >
                   <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>

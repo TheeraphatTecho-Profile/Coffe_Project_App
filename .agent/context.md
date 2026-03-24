@@ -75,11 +75,17 @@
    ├── Services
    │   ├── firebaseDb.ts (Firestore CRUD)
    │   ├── communityService.ts (community posts/comments/groups)
+   │   ├── productionService.ts (fresh sales, processed products, annual production)
+   │   ├── userProfileService.ts (farmer profile + citizen ID validation)
    │   ├── locationService.ts (GPS coordinate fetching)
    │   ├── exportService.ts (CSV export)
    │   ├── pdfExportService.ts (HTML → PDF export + share)
    │   ├── imageUtils.ts (image compression / optimization)
    │   └── offlineService.ts (AsyncStorage cache)
+   ├── Production Flows
+   │   ├── Fresh Sale entry
+   │   ├── Processed Product entry
+   │   └── Annual Report export
    └── [Firebase Backend (Serverless)]
        ├── Auth (Firebase Authentication)
        └── Firestore (farms + harvests + community collections)
@@ -168,6 +174,7 @@ Coffee_Project/
 | 2569-03-19 | AI (Cascade)     | สร้าง Expo app ครบทุกหน้าจอจาก mockup, อัปเดต tech stack + directory structure |
 | 2569-03-24 | AI (Antigravity) | ลบ backend/ (zombie code), เพิ่ม expo-location + GPS ใน AddFarmStep3, อัปเดต architecture diagram |
 | 2569-03-24 | AI (Cascade)     | เพิ่ม expo-print / expo-sharing / expo-image-manipulator, อัปเดต test count เป็น 47 suites / 481 tests, เพิ่ม PDF/Image services |
+| 2569-03-24 | AI (Cascade)     | เพิ่ม productionService / userProfileService, flow ขายผลสด-แปรรูป-รายงานรายปี, และ centralized logout |
 | 2569-03-19 | AI (Cascade)     | Restructure frontend/backend, setup Node.js/Express API, Jest testing, full UI screens (Harvest/Price/Profile) |
 | 2569-03-20 | AI (Cascade)     | Firebase migration: remove Supabase, use Firebase JS SDK for auth+db, add Facebook/LINE auth, animations, 105 unit tests |
 

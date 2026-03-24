@@ -24,7 +24,7 @@ export const PriceScreen: React.FC = () => {
 
       setFarmStats(farms.map((f: any) => ({
         name: f.name || 'สวน',
-        yield: f.area_rai || 0,
+        yield: f.area || 0,
         treeCount: f.treeCount || 0,
       })));
 

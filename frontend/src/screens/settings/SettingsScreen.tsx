@@ -1,13 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
-import { showAlert } from '../../lib/alert';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
+import { useLogout } from '../../hooks';
 
 type RootStackParamList = {
   Settings: undefined;
@@ -18,36 +17,7 @@ type RootStackParamList = {
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark, toggleTheme } = useTheme();
-  const { signOut } = useAuth();
-
-  const handleLogout = () => {
-    const doLogout = async () => {
-      try {
-        await signOut();
-      } catch (err) {
-        console.error('Logout failed:', err);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      const confirmed = typeof globalThis.confirm === 'function'
-        ? globalThis.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')
-        : true;
-      if (confirmed) {
-        void doLogout();
-      }
-      return;
-    }
-
-    showAlert(
-      'ออกจากระบบ',
-      'คุณต้องการออกจากระบบใช่หรือไม่?',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'ออกจากระบบ', style: 'destructive', onPress: () => { void doLogout(); } },
-      ]
-    );
-  };
+  const { requestLogout } = useLogout();
 
   const SettingItem = ({ 
     icon, 
@@ -165,7 +135,7 @@ export const SettingsScreen: React.FC = () => {
             <SettingItem
               icon="log-out-outline"
               title="ออกจากระบบ"
-              onPress={handleLogout}
+              onPress={requestLogout}
               danger
             />
           </View>

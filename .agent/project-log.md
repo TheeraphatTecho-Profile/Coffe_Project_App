@@ -3,16 +3,54 @@
 > ⚠️ **AI ต้องอ่านไฟล์นี้ทุกครั้งที่รับ prompt ใหม่**
 > ไฟล์นี้บันทึกทุกสิ่งที่ทำไปแล้ว — ถ้าไม่อ่าน จะทำงานซ้ำ
 
----
 
 ## สรุปสถานะ (Status Summary)
 
 | หัวข้อ                              | สถานะ                      |
 | ----------------------------------- | -------------------------- |
 | **Phase ปัจจุบัน**                  | ✅ Phase 5 — Production Hardening & Architecture Cleanup |
-| **อัปเดตล่าสุด**                    | 24 มีนาคม 2569 (Sprint 5.11) |
+| **อัปเดตล่าสุด**                    | 24 มีนาคม 2569 (Sprint 5.13) |
 | **งานค้าง (Pending)**               | 0 รายการ |
 | **ปัญหาที่ยังไม่แก้ (Open Issues)** | ไม่มีปัญหาค้างระดับ blocker |
+
+---
+
+### ✅ Sprint 5.13 — Production Tracking, User Profile Expansion & Logout Finalization (24 มี.ค. 2569)
+
+- **วันที่:** 24 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **งานที่ทำ:**
+  1. **เพิ่ม production flows:** สร้าง `productionService.ts` และหน้าจอ `AddFreshSaleScreen`, `AddProcessedProductScreen`, `AnnualReportScreen` สำหรับบันทึกการขายผลสด, ผลิตภัณฑ์แปรรูป, และรายงานรายปี
+  2. **ขยาย navigation:** เพิ่ม `HarvestStack`, wire `HarvestTab` ให้เป็น nested stack, เพิ่ม root routes สำหรับ production screens และเปิดทางไป `FarmDetail`
+  3. **ขยาย farmer profile:** เพิ่ม `userProfileService.ts`, ขยาย `EditProfileScreen` ให้รองรับข้อมูลเกษตรกร/ที่อยู่/เลขบัตรประชาชน และเพิ่ม Firestore rules สำหรับ `user_profiles`, `fresh_sales`, `processed_products`
+  4. **finalize logout consolidation:** คง `useLogout` เป็นทางออกกลางของ `HomeScreen`, `ProfileScreen`, `SettingsScreen` พร้อม unit test สำหรับ confirmation, success, error, duplicate guard
+  5. **แก้ compatibility ของ `Farm` model:** ทำให้ field ใหม่รองรับข้อมูลเก่าและเติม default ตอน read/create เพื่อให้ test fixtures เดิมยังใช้ได้
+- **ผลลัพธ์:**
+  - รองรับ workflow ข้อมูลผลผลิตหลังการเก็บเกี่ยวครบขึ้น
+  - โปรไฟล์เกษตรกรเก็บข้อมูลเชิงธุรกิจ/เอกสารได้ละเอียดขึ้น
+  - logout behavior สม่ำเสมอทุกหน้า
+  - `npx tsc --noEmit` ผ่าน
+  - Jest ที่เกี่ยวข้องผ่าน **5 suites / 74 tests**
+- **ไฟล์ที่เกี่ยวข้อง:** `frontend/src/lib/productionService.ts`, `frontend/src/lib/userProfileService.ts`, `frontend/src/navigation/HarvestStack.tsx`, `frontend/src/navigation/AppNavigator.tsx`, `frontend/src/navigation/MainTabs.tsx`, `frontend/src/navigation/FarmStack.tsx`, `frontend/src/screens/production/AddFreshSaleScreen.tsx`, `frontend/src/screens/production/AddProcessedProductScreen.tsx`, `frontend/src/screens/production/AnnualReportScreen.tsx`, `frontend/src/screens/settings/EditProfileScreen.tsx`, `frontend/src/hooks/useLogout.ts`, `frontend/src/__tests__/hooks/useLogout.test.tsx`, `frontend/src/lib/firebaseDb.ts`, `firestore.rules`
+
+---
+
+### ✅ Sprint 5.12 — Centralized Logout Feature (24 มี.ค. 2569)
+
+- **วันที่:** 24 มีนาคม 2569
+- **ผู้ทำ:** AI (Cascade)
+- **งานที่ทำ:**
+  1. **สร้าง `useLogout` hook กลาง:** รวม confirmation dialog + sign out + error feedback ไว้ใน logic เดียว
+  2. **ลบ logout logic ซ้ำซ้อน:** เปลี่ยน `HomeScreen`, `ProfileScreen`, `SettingsScreen` ให้ใช้ `useLogout()` แทนการเขียน `handleLogout` แยกแต่ละหน้า
+  3. **เพิ่ม loading guard:** กันการกด logout ซ้ำระหว่าง request ยังทำงานอยู่
+  4. **เพิ่ม failure feedback:** ถ้า `signOut()` ล้มเหลว จะแสดง alert ว่าออกจากระบบไม่สำเร็จแทนการ log อย่างเดียว
+  5. **เพิ่ม unit test ใหม่:** `src/__tests__/hooks/useLogout.test.tsx` ครอบ confirmation, success, error, และ duplicate-request guard
+- **ผลลัพธ์:**
+  - ปุ่ม logout ในทุกหน้าทำงานแบบเดียวกัน
+  - ลด code duplication และดูแลง่ายขึ้น
+  - `npx tsc --noEmit` ผ่าน 0 errors
+  - Jest test ใหม่ผ่าน 4/4 tests
+- **ไฟล์ที่เกี่ยวข้อง:** `frontend/src/hooks/useLogout.ts`, `frontend/src/hooks/index.ts`, `frontend/src/screens/home/HomeScreen.tsx`, `frontend/src/screens/profile/ProfileScreen.tsx`, `frontend/src/screens/settings/SettingsScreen.tsx`, `frontend/src/__tests__/hooks/useLogout.test.tsx`
 
 ---
 

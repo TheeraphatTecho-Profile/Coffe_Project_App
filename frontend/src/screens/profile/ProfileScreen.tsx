@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { useAuth } from '../../context/AuthContext';
+import { useLogout } from '../../hooks';
 import { FarmService, HarvestService } from '../../lib/firebaseDb';
 import { generateAndShareReport, PdfFarmData, PdfHarvestData } from '../../lib/pdfExportService';
 
@@ -22,7 +23,8 @@ interface MenuItem {
 
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { requestLogout } = useLogout();
   const [farmCount, setFarmCount] = useState(0);
   const [harvestCount, setHarvestCount] = useState(0);
   const [totalIncome, setTotalIncome] = useState(0);
@@ -53,41 +55,6 @@ export const ProfileScreen: React.FC = () => {
     setRefreshing(true);
     await fetchProfileData();
     setRefreshing(false);
-  };
-
-  const handleLogout = () => {
-    const doLogout = async () => {
-      try {
-        await signOut();
-      } catch (err) {
-        console.error('Logout failed:', err);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      const confirmed = typeof globalThis.confirm === 'function'
-        ? globalThis.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')
-        : true;
-      if (confirmed) {
-        void doLogout();
-      }
-      return;
-    }
-
-    showAlert(
-      'ออกจากระบบ',
-      'คุณต้องการออกจากระบบใช่หรือไม่?',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { 
-          text: 'ออกจากระบบ', 
-          style: 'destructive',
-          onPress: async () => {
-            await doLogout();
-          }
-        },
-      ]
-    );
   };
 
   const handleExportPdf = async () => {
@@ -141,7 +108,7 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const GENERAL_SETTINGS: MenuItem[] = [
-    { icon: 'person-outline', label: 'แก้ไขโปรไฟล์', onPress: () => { /* TODO: navigate to EditProfile */ } },
+    { icon: 'person-outline', label: 'แก้ไขโปรไฟล์', onPress: () => { try { navigation.navigate('Settings', { screen: 'EditProfile' }); } catch { /* noop */ } } },
     { icon: 'notifications-outline', label: 'การแจ้งเตือน', onPress: () => { /* TODO: navigate to Notifications */ } },
     { icon: 'settings-outline', label: 'ตั้งค่าแอป', onPress: () => { try { navigation.navigate('Settings', { screen: 'SettingsMain' }); } catch { /* noop */ } } },
   ];
@@ -149,6 +116,9 @@ export const ProfileScreen: React.FC = () => {
   const DATA_SETTINGS: MenuItem[] = [
     { icon: 'leaf-outline', label: 'สวนของฉัน', detail: `${farmCount} แห่ง`, onPress: () => { try { navigation.navigate('Main', { screen: 'FarmTab' }); } catch { /* noop */ } } },
     { icon: 'basket-outline', label: 'ประวัติเก็บเกี่ยว', detail: `${harvestCount} รายการ`, onPress: () => { try { navigation.navigate('Main', { screen: 'HarvestTab' }); } catch { /* noop */ } } },
+    { icon: 'pricetag-outline', label: 'ขายผลสด', onPress: () => { try { navigation.navigate('AddFreshSale'); } catch { /* noop */ } } },
+    { icon: 'flask-outline', label: 'ผลิตภัณฑ์แปรรูป', onPress: () => { try { navigation.navigate('AddProcessedProduct'); } catch { /* noop */ } } },
+    { icon: 'calendar-outline', label: 'รายงานสรุปรายปี', onPress: () => { try { navigation.navigate('AnnualReport'); } catch { /* noop */ } } },
     { icon: 'bar-chart-outline', label: 'รายงานวิเคราะห์', onPress: () => { try { navigation.navigate('Main', { screen: 'PriceTab' }); } catch { /* noop */ } } },
     { icon: 'document-text-outline', label: exporting ? 'กำลังสร้าง PDF...' : 'ส่งออกรายงาน PDF', detail: 'สรุปข้อมูลสวนและผลผลิต', onPress: handleExportPdf },
   ];
@@ -258,7 +228,7 @@ export const ProfileScreen: React.FC = () => {
             <View style={styles.menuCard}>
               {renderMenuItem({ icon: 'help-circle-outline', label: 'ช่วยเหลือ & ติดต่อ' }, 0)}
               {renderMenuItem({ icon: 'document-text-outline', label: 'นโยบายความเป็นส่วนตัว' }, 1)}
-              {renderMenuItem({ icon: 'log-out-outline', label: 'ออกจากระบบ', isDestructive: true, onPress: handleLogout }, 2)}
+              {renderMenuItem({ icon: 'log-out-outline', label: 'ออกจากระบบ', isDestructive: true, onPress: requestLogout }, 2)}
             </View>
 
             {/* App footer */}

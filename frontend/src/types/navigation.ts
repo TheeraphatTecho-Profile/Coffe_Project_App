@@ -38,6 +38,7 @@ export interface FarmData {
   irrigations?: string[];
   province: string;
   district: string | null;
+  subDistrict?: string | null;
   altitude: number | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -86,4 +87,8 @@ export type RootStackParamList = {
   // Market
   MarketIntelligence: { farmId?: string };
   BuyerManagement: { farmId?: string };
+  // Production (ผลผลิต)
+  AddFreshSale: undefined;
+  AddProcessedProduct: undefined;
+  AnnualReport: undefined;
 };

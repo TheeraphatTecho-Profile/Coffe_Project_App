@@ -6,12 +6,13 @@ import { AddFarmStep1Screen } from '../screens/farm/AddFarmStep1Screen';
 import { AddFarmStep2Screen } from '../screens/farm/AddFarmStep2Screen';
 import { AddFarmStep3Screen } from '../screens/farm/AddFarmStep3Screen';
 import { AddFarmStep4Screen } from '../screens/farm/AddFarmStep4Screen';
+import { FarmDetailScreen } from '../screens/farm/FarmDetailScreen';
 
 const Stack = createNativeStackNavigator<FarmStackParamList>();
 
 /**
  * Farm management stack navigator.
- * Handles farm list and the 4-step add farm flow.
+ * Handles farm list, the 4-step add farm flow, and farm detail/edit.
  */
 export const FarmStack: React.FC = () => {
   return (
@@ -26,6 +27,7 @@ export const FarmStack: React.FC = () => {
       <Stack.Screen name="AddFarmStep2" component={AddFarmStep2Screen} />
       <Stack.Screen name="AddFarmStep3" component={AddFarmStep3Screen} />
       <Stack.Screen name="AddFarmStep4" component={AddFarmStep4Screen} />
+      <Stack.Screen name="FarmDetail" component={FarmDetailScreen} />
     </Stack.Navigator>
   );
 };
