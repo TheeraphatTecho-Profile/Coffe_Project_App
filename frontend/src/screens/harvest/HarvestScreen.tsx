@@ -144,15 +144,15 @@ export const HarvestScreen: React.FC = () => {
     
     PerformanceMonitor.start('topFarm');
     const stats = filteredHarvests.reduce((acc, h) => {
-      if (!h.farm_id) return acc;
-      const current = acc.get(h.farm_id) || {
+      if (!h.farmId) return acc;
+      const current = acc.get(h.farmId) || {
         name: h.farms?.name || 'ไร่กาแฟ',
         weight: 0,
         income: 0,
       };
-      current.weight += h.weight_kg || 0;
+      current.weight += h.weightKg || 0;
       current.income += h.income || 0;
-      acc.set(h.farm_id, current);
+      acc.set(h.farmId, current);
       return acc;
     }, new Map<string, { name: string; weight: number; income: number }>());
     const sorted = Array.from(stats.values()).sort((a, b) => b.weight - a.weight);
@@ -161,7 +161,7 @@ export const HarvestScreen: React.FC = () => {
   }, [filteredHarvests]);
 
   const totalYield = useMemo(
-    () => filteredHarvests.reduce((sum, h) => sum + (h.weight_kg || 0), 0),
+    () => filteredHarvests.reduce((sum, h) => sum + (h.weightKg || 0), 0),
     [filteredHarvests]
   );
   
@@ -187,7 +187,7 @@ export const HarvestScreen: React.FC = () => {
 
   // Optimized harvest item renderer
   const renderHarvestItem = useCallback(({ item: h }: { item: Harvest }) => {
-    const date = h.harvest_date ? new Date(h.harvest_date) : new Date();
+    const date = h.harvestDate ? new Date(h.harvestDate) : new Date();
     const day = date.getDate().toString();
     const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
     const monthShort = monthNames[date.getMonth()] || '';
@@ -214,7 +214,7 @@ export const HarvestScreen: React.FC = () => {
           <View style={styles.harvestDetails}>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>น้ำหนัก:</Text>
-              <Text style={styles.detailValue}>{formatNumber(h.weight_kg || 0)} กก.</Text>
+              <Text style={styles.detailValue}>{formatNumber(h.weightKg || 0)} กก.</Text>
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>รายได้:</Text>

@@ -4,7 +4,7 @@ export type HarvestFilters = {
   search?: string;
   year?: string; // Thai year (พ.ศ.) or 'ทั้งหมด'
   shift?: string; // 'all' | shift id in lowercase
-  farmId?: string; // 'all' or farm_id
+  farmId?: string; // 'all' or farmId
 };
 
 const DEFAULT_FILTERS: Required<HarvestFilters> = {
@@ -33,7 +33,7 @@ export function filterHarvests(harvests: Harvest[], filters: HarvestFilters = {}
   const queryText = search.trim().toLowerCase();
 
   return harvests.filter((harvest) => {
-    const thaiYear = toThaiYear(harvest.harvest_date);
+    const thaiYear = toThaiYear(harvest.harvestDate);
     if (year !== 'ทั้งหมด' && thaiYear !== year) {
       return false;
     }
@@ -42,13 +42,13 @@ export function filterHarvests(harvests: Harvest[], filters: HarvestFilters = {}
       return false;
     }
 
-    if (farmId !== 'all' && harvest.farm_id !== farmId) {
+    if (farmId !== 'all' && harvest.farmId !== farmId) {
       return false;
     }
 
     if (queryText) {
       const haystack = [
-        harvest.harvest_date,
+        harvest.harvestDate,
         thaiYear,
         harvest.variety,
         normalizeShift(harvest.shift),
@@ -70,7 +70,7 @@ export function filterHarvests(harvests: Harvest[], filters: HarvestFilters = {}
 export function getAvailableYears(harvests: Harvest[]): string[] {
   const years = new Set<string>();
   harvests.forEach((harvest) => {
-    const thaiYear = toThaiYear(harvest.harvest_date);
+    const thaiYear = toThaiYear(harvest.harvestDate);
     if (thaiYear) {
       years.add(thaiYear);
     }
@@ -82,10 +82,10 @@ export function getAvailableYears(harvests: Harvest[]): string[] {
 export function getFarmOptions(harvests: Harvest[]): { id: string; name: string }[] {
   const map = new Map<string, string>();
   harvests.forEach((harvest) => {
-    if (harvest.farm_id) {
+    if (harvest.farmId) {
       const displayName = harvest.farms?.name || 'ไร่กาแฟ';
-      if (!map.has(harvest.farm_id)) {
-        map.set(harvest.farm_id, displayName);
+      if (!map.has(harvest.farmId)) {
+        map.set(harvest.farmId, displayName);
       }
     }
   });
@@ -122,7 +122,7 @@ export function getShiftSummary(harvests: Harvest[]): ShiftSummary[] {
 
     const bucket = summary.get(shift)!;
     bucket.count += 1;
-    bucket.totalWeight += harvest.weight_kg || 0;
+    bucket.totalWeight += harvest.weightKg || 0;
   });
 
   return Array.from(summary.values()).sort((a, b) => b.totalWeight - a.totalWeight);

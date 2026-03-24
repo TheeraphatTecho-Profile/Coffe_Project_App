@@ -14,8 +14,8 @@ export const ExportService = {
       f.province,
       f.district || '',
       f.variety || '',
-      f.tree_count?.toString() || '',
-      f.planting_year?.toString() || '',
+      f.treeCount?.toString() || '',
+      f.plantingYear?.toString() || '',
       f.notes || '',
     ]);
 
@@ -28,10 +28,10 @@ export const ExportService = {
   harvestsToCSV(harvests: Harvest[]): string {
     const headers = ['Date', 'Farm', 'Variety', 'Weight (kg)', 'Income', 'Shift', 'Notes'];
     const rows = harvests.map(h => [
-      h.harvest_date,
+      h.harvestDate,
       h.farms?.name || '',
       h.variety || '',
-      h.weight_kg.toString(),
+      h.weightKg.toString(),
       h.income.toString(),
       h.shift,
       h.notes || '',

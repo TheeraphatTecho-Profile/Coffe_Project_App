@@ -65,9 +65,9 @@ export const HarvestDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleSave = async () => {
     try {
       await HarvestService.update(harvestId, {
-        harvest_date: editData.harvest_date,
+        harvestDate: editData.harvestDate,
         variety: editData.variety,
-        weight_kg: editData.weight_kg,
+        weightKg: editData.weightKg,
         income: editData.income,
         shift: editData.shift,
         notes: editData.notes,
@@ -123,11 +123,11 @@ export const HarvestDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             {isEditing ? (
               <TextInput
                 style={styles.dateInput}
-                value={editData.harvest_date || ''}
-                onChangeText={(text: string) => setEditData({ ...editData, harvest_date: text })}
+                value={editData.harvestDate || ''}
+                onChangeText={(text: string) => setEditData({ ...editData, harvestDate: text })}
               />
             ) : (
-              <Text style={styles.dateValue}>{formatDate(harvest.harvest_date)}</Text>
+              <Text style={styles.dateValue}>{formatDate(harvest.harvestDate)}</Text>
             )}
           </View>
 
@@ -144,12 +144,12 @@ export const HarvestDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               {isEditing ? (
                 <TextInput
                   style={styles.statInput}
-                  value={editData.weight_kg?.toString() || ''}
-                  onChangeText={(text: string) => setEditData({ ...editData, weight_kg: parseFloat(text) || 0 })}
+                  value={editData.weightKg?.toString() || ''}
+                  onChangeText={(text: string) => setEditData({ ...editData, weightKg: parseFloat(text) || 0 })}
                   keyboardType="decimal-pad"
                 />
               ) : (
-                <Text style={styles.statValue}>{formatNumber(harvest.weight_kg)} กก.</Text>
+                <Text style={styles.statValue}>{formatNumber(harvest.weightKg)} กก.</Text>
               )}
             </View>
             <View style={styles.statBox}>

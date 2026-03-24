@@ -81,31 +81,31 @@ describe('FarmService', () => {
         data: () => ({
           name: 'New Farm',
           area: 5,
-          soil_type: 'clay',
-          water_source: 'stream',
+          soilType: 'clay',
+          waterSource: 'stream',
           province: 'เลย',
           district: null,
           altitude: null,
           variety: null,
-          tree_count: null,
-          planting_year: null,
+          treeCount: null,
+          plantingYear: null,
           notes: null,
-          user_id: 'user-1',
-          created_at: 'SERVER_TIMESTAMP',
+          userId: 'user-1',
+          createdAt: 'SERVER_TIMESTAMP',
         }),
       });
 
       const farm = await FarmService.create('user-1', {
         name: 'New Farm',
         area: 5,
-        soil_type: 'clay',
-        water_source: 'stream',
+        soilType: 'clay',
+        waterSource: 'stream',
         province: 'เลย',
         district: null,
         altitude: null,
         variety: null,
-        tree_count: null,
-        planting_year: null,
+        treeCount: null,
+        plantingYear: null,
         notes: null,
       });
 
@@ -121,14 +121,14 @@ describe('FarmService', () => {
         FarmService.create('user-1', {
           name: 'Fail Farm',
           area: 1,
-          soil_type: null,
-          water_source: null,
+          soilType: null,
+          waterSource: null,
           province: 'เลย',
           district: null,
           altitude: null,
           variety: null,
-          tree_count: null,
-          planting_year: null,
+          treeCount: null,
+          plantingYear: null,
           notes: null,
         }),
       ).rejects.toThrow('Permission denied');
@@ -197,7 +197,7 @@ describe('HarvestService', () => {
       const harvests = await HarvestService.getAll('user-1');
 
       expect(harvests).toHaveLength(1);
-      expect(harvests[0].weight_kg).toBe(50);
+      expect(harvests[0].weightKg).toBe(50);
       expect(harvests[0].farms?.name).toBe('Test Farm');
     });
 
@@ -229,7 +229,7 @@ describe('HarvestService', () => {
       const harvest = await HarvestService.getById('harvest-1');
 
       expect(harvest).not.toBeNull();
-      expect(harvest!.weight_kg).toBe(50);
+      expect(harvest!.weightKg).toBe(50);
       expect(harvest!.farms?.name).toBe('Test Farm');
     });
 
@@ -261,30 +261,30 @@ describe('HarvestService', () => {
         id: 'new-harvest-id',
         exists: () => true,
         data: () => ({
-          farm_id: 'test-id-1',
-          harvest_date: '2024-03-20',
+          farmId: 'test-id-1',
+          harvestDate: '2024-03-20',
           variety: 'Robusta',
-          weight_kg: 30,
+          weightKg: 30,
           income: 3000,
           shift: 'afternoon',
           notes: null,
-          user_id: 'user-1',
-          created_at: 'SERVER_TIMESTAMP',
+          userId: 'user-1',
+          createdAt: 'SERVER_TIMESTAMP',
         }),
       });
 
       const harvest = await HarvestService.create('user-1', {
-        farm_id: 'test-id-1',
-        harvest_date: '2024-03-20',
+        farmId: 'test-id-1',
+        harvestDate: '2024-03-20',
         variety: 'Robusta',
-        weight_kg: 30,
+        weightKg: 30,
         income: 3000,
         shift: 'afternoon',
         notes: null,
       });
 
       expect(harvest.id).toBe('new-harvest-id');
-      expect(harvest.weight_kg).toBe(30);
+      expect(harvest.weightKg).toBe(30);
       expect(mockAddDoc).toHaveBeenCalledTimes(1);
     });
   });
@@ -293,7 +293,7 @@ describe('HarvestService', () => {
     it('should update a harvest', async () => {
       mockUpdateDoc.mockResolvedValue(undefined);
 
-      await expect(HarvestService.update('harvest-1', { weight_kg: 60 })).resolves.toBeUndefined();
+      await expect(HarvestService.update('harvest-1', { weightKg: 60 })).resolves.toBeUndefined();
       expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
     });
   });
@@ -311,11 +311,11 @@ describe('HarvestService', () => {
     it('should calculate correct totals', async () => {
       const harvestDoc1 = {
         id: 'h1',
-        data: () => ({ weight_kg: 50, income: 5000 }),
+        data: () => ({ weightKg: 50, income: 5000 }),
       };
       const harvestDoc2 = {
         id: 'h2',
-        data: () => ({ weight_kg: 30, income: 3000 }),
+        data: () => ({ weightKg: 30, income: 3000 }),
       };
       mockGetDocs.mockResolvedValue(mockQuerySnapshot([harvestDoc1, harvestDoc2]));
 
@@ -337,7 +337,7 @@ describe('HarvestService', () => {
     it('should handle null/undefined values', async () => {
       const harvestWithNulls = {
         id: 'h1',
-        data: () => ({ weight_kg: null, income: undefined }),
+        data: () => ({ weightKg: null, income: undefined }),
       };
       mockGetDocs.mockResolvedValue(mockQuerySnapshot([harvestWithNulls]));
 

@@ -123,7 +123,7 @@ export const FarmListScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.farmContent}>
                   <Text style={styles.farmName}>{farm.name}</Text>
                   <Text style={styles.farmDetail}>
-                    {farm.area} ไร่ • {farm.variety || '-'} • {farm.tree_count || 0} ต้น
+                    {farm.area} ไร่ • {farm.variety || '-'} • {farm.treeCount || 0} ต้น
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.textLight} />

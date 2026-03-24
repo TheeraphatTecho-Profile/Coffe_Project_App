@@ -67,14 +67,14 @@ export const FarmDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       await FarmService.update(farmId, {
         name: editData.name,
         area: editData.area,
-        soil_type: editData.soil_type,
-        water_source: editData.water_source,
+        soilType: editData.soilType,
+        waterSource: editData.waterSource,
         province: editData.province,
         district: editData.district,
         altitude: editData.altitude,
         variety: editData.variety,
-        tree_count: editData.tree_count,
-        planting_year: editData.planting_year,
+        treeCount: editData.treeCount,
+        plantingYear: editData.plantingYear,
         notes: editData.notes,
       });
       setFarm(editData as any);
@@ -163,14 +163,14 @@ export const FarmDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.infoCard}>
             <Text style={styles.sectionTitle}>ข้อมูลการปลูก</Text>
             <InfoRow icon="leaf" label="variety" value={farm.variety || '-'} editable />
-            <InfoRow icon="grid" label="tree_count" value={farm.tree_count ? `${farm.tree_count} ต้น` : '-'} editable />
-            <InfoRow icon="calendar" label="planting_year" value={farm.planting_year ? `พ.ศ. ${farm.planting_year}` : '-'} editable />
+            <InfoRow icon="grid" label="treeCount" value={farm.treeCount ? `${farm.treeCount} ต้น` : '-'} editable />
+            <InfoRow icon="calendar" label="plantingYear" value={farm.plantingYear ? `พ.ศ. ${farm.plantingYear}` : '-'} editable />
           </View>
 
           <View style={styles.infoCard}>
             <Text style={styles.sectionTitle}>สภาพแวดล้อม</Text>
-            <InfoRow icon="water" label="water_source" value={farm.water_source || '-'} editable />
-            <InfoRow icon="layers" label="soil_type" value={farm.soil_type || '-'} editable />
+            <InfoRow icon="water" label="waterSource" value={farm.waterSource || '-'} editable />
+            <InfoRow icon="layers" label="soilType" value={farm.soilType || '-'} editable />
           </View>
 
           {farm.notes && (

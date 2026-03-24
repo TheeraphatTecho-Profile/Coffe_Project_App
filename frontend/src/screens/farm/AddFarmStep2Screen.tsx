@@ -39,8 +39,8 @@ export const AddFarmStep2Screen: React.FC<Props> = ({ navigation, route }) => {
   const handleNext = () => {
     const farmData: Partial<FarmData> = {
       ...route.params.farmData,
-      water_source: waterSource,
-      water_detail: waterDetail.trim(),
+      waterSource: waterSource,
+      waterDetail: waterDetail.trim(),
       irrigations: irrigations.filter(i => i.enabled).map(i => i.id),
     };
     navigation.navigate('AddFarmStep3', { farmData });

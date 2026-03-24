@@ -32,16 +32,16 @@ export type FarmStackParamList = {
 export interface FarmData {
   name: string;
   area: number;
-  soil_type: string | null;
-  water_source: string | null;
-  water_detail?: string;
+  soilType: string | null;
+  waterSource: string | null;
+  waterDetail?: string;
   irrigations?: string[];
   province: string;
   district: string | null;
   altitude: number | null;
   variety: string | null;
-  tree_count: number | null;
-  planting_year: number | null;
+  treeCount: number | null;
+  plantingYear: number | null;
   notes: string | null;
 }
 
