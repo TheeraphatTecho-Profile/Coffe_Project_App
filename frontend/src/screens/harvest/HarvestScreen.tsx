@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { HarvestService, Harvest } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
+import { showAlert } from '../../lib/alert';
 import {
   filterHarvests,
   getAvailableYears,
@@ -185,6 +186,29 @@ export const HarvestScreen: React.FC = () => {
       : 'ลองเปลี่ยนตัวกรองหรือรีเซ็ตเพื่อดูรายการทั้งหมด',
   }), [harvests.length]);
 
+  const handleDeleteHarvest = useCallback((id: string) => {
+    showAlert(
+      'ลบรายการ',
+      'คุณต้องการลบรายการผลผลิตนี้ใช่หรือไม่?',
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ลบ',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await HarvestService.delete(id);
+              setHarvests(prev => prev.filter(item => item.id !== id));
+            } catch (err) {
+              console.error('Delete harvest error:', err);
+              showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถลบรายการได้');
+            }
+          },
+        },
+      ]
+    );
+  }, []);
+
   // Optimized harvest item renderer
   const renderHarvestItem = useCallback(({ item: h }: { item: Harvest }) => {
     const date = h.harvestDate ? new Date(h.harvestDate) : new Date();
@@ -223,16 +247,22 @@ export const HarvestScreen: React.FC = () => {
           </View>
         </View>
         <View style={styles.harvestActions}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('HarvestDetail', { harvestId: h.id })}
+          >
             <Ionicons name="create-outline" size={16} color={COLORS.primary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleDeleteHarvest(h.id)}
+          >
             <Ionicons name="trash-outline" size={16} color={COLORS.error} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
-  }, [navigation, formatNumber]);
+  }, [navigation, formatNumber, handleDeleteHarvest]);
 
   // List key extractor
   const keyExtractor = useCallback((item: Harvest) => item.id, []);
