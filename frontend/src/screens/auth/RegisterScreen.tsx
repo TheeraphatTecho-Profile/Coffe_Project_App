@@ -16,8 +16,10 @@ import { AuthStackParamList } from '../../types/navigation';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { PasswordStrength } from '../../components/PasswordStrength';
+import { SocialAuthButtons } from '../../components/SocialAuthButtons';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../constants';
 import { useAuth } from '../../context/AuthContext';
+import { signInWithLINE } from '../../lib/lineAuth';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -35,7 +37,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle, signInWithFacebook } = useAuth();
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -75,6 +77,48 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       }
     } catch (err) {
       console.error('Register error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      setLoading(true);
+      const { error } = await signInWithGoogle();
+      if (error) {
+        Alert.alert('สมัครด้วย Google ไม่สำเร็จ', error.message);
+      }
+    } catch (err) {
+      console.error('Google signup error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFacebookSignup = async () => {
+    try {
+      setLoading(true);
+      const { error } = await signInWithFacebook();
+      if (error) {
+        Alert.alert('สมัครด้วย Facebook ไม่สำเร็จ', error.message);
+      }
+    } catch (err) {
+      console.error('Facebook signup error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLineSignup = async () => {
+    try {
+      setLoading(true);
+      const { error } = await signInWithLINE();
+      if (error) {
+        Alert.alert('สมัครด้วย LINE ไม่สำเร็จ', error.message);
+      }
+    } catch (err) {
+      console.error('LINE signup error:', err);
     } finally {
       setLoading(false);
     }
@@ -188,25 +232,14 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               />
             </View>
 
-            {/* Social signup divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.divider} />
-              <Text style={styles.dividerText}>หรือสมัครผ่าน</Text>
-              <View style={styles.divider} />
-            </View>
-
-            {/* Social buttons */}
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Ionicons name="logo-google" size={18} color="#4285F4" />
-                <Text style={styles.socialLabel}>Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.socialButton, styles.socialFb]}>
-                <Ionicons name="logo-facebook" size={18} color={COLORS.white} />
-                <Text style={[styles.socialLabel, styles.socialFbLabel]}>Facebook</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Social signup buttons */}
+            <SocialAuthButtons
+              onGooglePress={handleGoogleSignup}
+              onFacebookPress={handleFacebookSignup}
+              onLinePress={handleLineSignup}
+              loading={loading}
+              label="หรือสมัครผ่าน"
+            />
 
             {/* Login link */}
             <View style={styles.loginRow}>

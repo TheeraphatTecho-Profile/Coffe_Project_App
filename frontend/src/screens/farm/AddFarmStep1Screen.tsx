@@ -11,13 +11,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { FarmStackParamList } from '../../types/navigation';
+import { FarmStackParamList, FarmData } from '../../types/navigation';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 
 type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'AddFarmStep1'>;
+  route: { params: { farmData?: Partial<FarmData> } };
 };
 
 type SoilType = 'loam' | 'sandy' | 'loei_signature' | null;
@@ -25,12 +26,22 @@ type SoilType = 'loam' | 'sandy' | 'loei_signature' | null;
 /**
  * Add Farm Step 1 - Basic farm info: name, area size, and soil type.
  */
-export const AddFarmStep1Screen: React.FC<Props> = ({ navigation }) => {
+export const AddFarmStep1Screen: React.FC<Props> = ({ navigation, route }) => {
   const [farmName, setFarmName] = useState('');
   const [area, setArea] = useState('');
   const [soilType, setSoilType] = useState<SoilType>(null);
 
   const canProceed = farmName.trim() && area.trim() && soilType;
+
+  const handleNext = () => {
+    const farmData: Partial<FarmData> = {
+      ...route.params?.farmData,
+      name: farmName.trim(),
+      area: parseFloat(area),
+      soil_type: soilType,
+    };
+    navigation.navigate('AddFarmStep2', { farmData });
+  };
 
   return (
     <View style={styles.container}>
@@ -132,7 +143,7 @@ export const AddFarmStep1Screen: React.FC<Props> = ({ navigation }) => {
             {/* Next button */}
             <Button
               title="ขั้นตอนต่อไป →"
-              onPress={() => navigation.navigate('AddFarmStep2')}
+              onPress={handleNext}
               disabled={!canProceed}
               style={styles.nextButton}
             />

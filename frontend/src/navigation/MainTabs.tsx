@@ -6,6 +6,7 @@ import { MainTabParamList } from '../types/navigation';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { FarmStack } from './FarmStack';
 import { HarvestScreen } from '../screens/harvest/HarvestScreen';
+import { CommunityStack } from './CommunityStack';
 import { PriceScreen } from '../screens/price/PriceScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { COLORS, FONTS } from '../constants';
@@ -16,6 +17,7 @@ const TAB_ICONS: Record<string, { focused: string; unfocused: string }> = {
   HomeTab: { focused: 'home', unfocused: 'home-outline' },
   FarmTab: { focused: 'leaf', unfocused: 'leaf-outline' },
   HarvestTab: { focused: 'basket', unfocused: 'basket-outline' },
+  CommunityTab: { focused: 'people', unfocused: 'people-outline' },
   PriceTab: { focused: 'trending-up', unfocused: 'trending-up-outline' },
   ProfileTab: { focused: 'person', unfocused: 'person-outline' },
 };
@@ -54,6 +56,11 @@ export const MainTabs: React.FC = () => {
         name="HarvestTab"
         component={HarvestScreen}
         options={{ tabBarLabel: 'เก็บเกี่ยว' }}
+      />
+      <Tab.Screen
+        name="CommunityTab"
+        component={CommunityStack}
+        options={{ tabBarLabel: 'ชุมชน' }}
       />
       <Tab.Screen
         name="PriceTab"

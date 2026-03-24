@@ -11,64 +11,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { FarmStackParamList } from '../../types/navigation';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { FarmService, Farm } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme/ThemeProvider';
+import { AnimatedButton } from '../../components/AnimatedButton';
+import { SkeletonLoader, TextSkeleton } from '../../components/SkeletonLoader';
+import { Logo } from '../../components/Logo';
 
 type Props = {
   navigation: NativeStackNavigationProp<FarmStackParamList, 'FarmList'>;
 };
 
-const MOCK_FARMS: Farm[] = [
-  {
-    id: '1',
-    name: 'สวนเขาหงอนเอน',
-    area: 32,
-    variety: 'Arabica',
-    tree_count: 1200,
-    soil_type: null,
-    water_source: null,
-    province: 'เลย',
-    district: null,
-    altitude: null,
-    planting_year: null,
-    notes: null,
-    created_at: {} as any,
-    user_id: '',
-  },
-  {
-    id: '2',
-    name: 'สวนภูเรือ',
-    area: 45,
-    variety: 'Arabica',
-    tree_count: 1800,
-    soil_type: null,
-    water_source: null,
-    province: 'เลย',
-    district: null,
-    altitude: null,
-    planting_year: null,
-    notes: null,
-    created_at: {} as any,
-    user_id: '',
-  },
-  {
-    id: '3',
-    name: 'สวนนาด้วง',
-    area: 28,
-    variety: 'Robusta',
-    tree_count: 950,
-    soil_type: null,
-    water_source: null,
-    province: 'เลย',
-    district: null,
-    altitude: null,
-    planting_year: null,
-    notes: null,
-    created_at: {} as any,
-    user_id: '',
-  },
-];
 
 /**
  * Farm list screen showing all user's coffee farms.
@@ -79,19 +32,20 @@ export const FarmListScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
+  const { colors, spacing, typography, radius, shadows } = useTheme();
 
   const fetchFarms = useCallback(async () => {
     if (!user?.uid) {
-      setFarms(MOCK_FARMS);
+      setFarms([]);
       setLoading(false);
       return;
     }
     try {
       const data = await FarmService.getAll(user.uid);
-      setFarms(data.length > 0 ? data : MOCK_FARMS);
+      setFarms(data);
     } catch (err) {
       console.error('Error fetching farms:', err);
-      setFarms(MOCK_FARMS);
+      setFarms([]);
     } finally {
       setLoading(false);
     }
@@ -107,64 +61,85 @@ export const FarmListScreen: React.FC<Props> = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  const styles = React.useMemo(() => createStyles(colors, spacing, typography, radius, shadows), [colors, spacing, typography, radius, shadows]);
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Ionicons name="cafe" size={22} color={COLORS.text} />
+            <Logo size="small" showText={false} />
             <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
           </View>
           <TouchableOpacity style={styles.notifButton}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         >
           <Text style={styles.title}>สวนของฉัน</Text>
           <Text style={styles.subtitle}>จัดการสวนกาแฟทั้งหมดของคุณ</Text>
 
           {/* Add farm button */}
-          <TouchableOpacity
-            style={styles.addFarmCard}
-            onPress={() => navigation.navigate('AddFarmStep1')}
-          >
-            <Ionicons name="add-circle" size={32} color={COLORS.primary} />
-            <Text style={styles.addFarmText}>เพิ่มสวนใหม่</Text>
-          </TouchableOpacity>
+          <AnimatedButton
+            title="เพิ่มสวนใหม่"
+            onPress={() => navigation.navigate('AddFarmStep1', {})}
+            variant="outline"
+            size="large"
+            icon={<Ionicons name="add-circle" size={32} color={colors.primary} />}
+            style={styles.addFarmButton}
+          />
 
           {/* Farm list */}
-          {(farms.length > 0 ? farms : MOCK_FARMS).map((farm) => (
-            <TouchableOpacity 
-              key={farm.id} 
-              style={styles.farmCard}
-              onPress={() => navigation.navigate('FarmDetail', { farmId: farm.id })}
-            >
-              <View style={styles.farmIcon}>
-                <Ionicons name="leaf" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.farmContent}>
-                <Text style={styles.farmName}>{farm.name}</Text>
-                <Text style={styles.farmDetail}>
-                  {farm.area} ไร่ • {farm.variety || '-'} • {farm.tree_count || 0} ต้น
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} />
-            </TouchableOpacity>
-          ))}
+          {loading ? (
+            <View style={styles.loadingCard}>
+              <SkeletonLoader width={40} height={40} borderRadius={20} />
+              <TextSkeleton width={120} height={20} style={{ marginTop: spacing.md }} />
+            </View>
+          ) : farms.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Ionicons name="leaf-outline" size={40} color={colors.textLight} />
+              <Text style={styles.emptyTitle}>ยังไม่มีสวนกาแฟ</Text>
+              <Text style={styles.emptyText}>
+                เริ่มต้นโดยการเพิ่มสวนแรกของคุณเพื่อจัดการการผลิต
+              </Text>
+            </View>
+          ) : (
+            farms.map((farm: Farm) => (
+              <TouchableOpacity 
+                key={farm.id} 
+                style={styles.farmCard}
+                onPress={() => navigation.navigate('FarmDetail', { farmId: farm.id })}
+              >
+                <View style={styles.farmIcon}>
+                  <Ionicons name="leaf" size={24} color={colors.primary} />
+                </View>
+                <View style={styles.farmContent}>
+                  <Text style={styles.farmName}>{farm.name}</Text>
+                  <Text style={styles.farmDetail}>
+                    {farm.area} ไร่ • {farm.variety || '-'} • {farm.tree_count || 0} ต้น
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, spacing: any, typography: any, radius: any, shadows: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -173,17 +148,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   headerBrand: {
-    fontSize: FONTS.sizes.lg,
+    fontSize: typography.sizes.lg,
     fontWeight: '600',
-    color: COLORS.text,
+    color: colors.text,
   },
   notifButton: {
     width: 40,
@@ -193,53 +168,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scrollContent: {
-    paddingHorizontal: SPACING.xl,
-    paddingBottom: SPACING.xxxxl,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
   title: {
-    fontSize: FONTS.sizes.xxl,
+    fontSize: typography.sizes.xxl,
     fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: FONTS.sizes.md,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xxl,
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
+    marginBottom: spacing.xxl,
   },
-  addFarmCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.md,
-    backgroundColor: COLORS.successLight,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.xl,
-    marginBottom: SPACING.xxl,
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    borderStyle: 'dashed',
-  },
-  addFarmText: {
-    fontSize: FONTS.sizes.lg,
-    fontWeight: '600',
-    color: COLORS.primary,
+  addFarmButton: {
+    marginBottom: spacing.xxl,
   },
   farmCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    gap: SPACING.md,
-    ...SHADOWS.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    gap: spacing.md,
+    ...shadows.sm,
   },
   farmIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.successLight,
+    backgroundColor: colors.successLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -247,13 +207,46 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   farmName: {
-    fontSize: FONTS.sizes.md,
+    fontSize: typography.sizes.md,
     fontWeight: '600',
-    color: COLORS.text,
+    color: colors.text,
     marginBottom: 2,
   },
   farmDetail: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.textSecondary,
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+  },
+  // Empty state
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xxxl,
+    alignItems: 'center',
+    gap: spacing.md,
+    ...shadows.sm,
+  },
+  emptyTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  emptyText: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  // Loading state
+  loadingCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xxxl,
+    alignItems: 'center',
+    gap: spacing.md,
+    ...shadows.sm,
+  },
+  loadingText: {
+    fontSize: typography.sizes.md,
+    color: colors.textSecondary,
   },
 });

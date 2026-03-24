@@ -5,16 +5,15 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
-  GoogleAuthProvider,
   FacebookAuthProvider,
   OAuthProvider,
   signInWithPopup,
-  signInWithCredential,
   updateProfile,
   User,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { Platform } from 'react-native';
+import { signInWithGoogle as googleAuthSignIn, handleGoogleRedirectResult } from '../lib/googleAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -47,11 +46,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | undefined;
+
+    const initAuth = async () => {
+      let redirectUser: User | null = null;
+
+      // On web, await redirect result before starting the auth observer so that
+      // onAuthStateChanged fires with the signed-in user, not null.
+      if (Platform.OS === 'web') {
+        redirectUser = await handleGoogleRedirectResult();
+        if (redirectUser) {
+          setUser(redirectUser);
+          setLoading(false);
+        }
+      }
+
+      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        setUser(firebaseUser ?? auth.currentUser ?? redirectUser);
+        setLoading(false);
+      });
+    };
+
+    initAuth();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   /**
@@ -83,12 +103,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   /**
    * Sign out the current user.
+   * Clears Firebase auth session and resets local state.
    */
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      setUser(null);
     } catch (err) {
       console.error('Sign out error:', err);
+      throw err;
     }
   };
 
@@ -105,25 +128,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   /**
-   * Sign in with Google (Web: popup, Android: redirect).
+   * Sign in with Google using expo-auth-session + Firebase credential.
+   * Works on both Web and Native platforms.
    */
   const signInWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-
-      if (Platform.OS === 'web') {
-        await signInWithPopup(auth, provider);
-      } else {
-        // On native, use @react-native-google-signin if available
-        // Fallback to popup for Expo Go
-        await signInWithPopup(auth, provider);
-      }
-      return { error: null };
-    } catch (err: unknown) {
-      return { error: err as Error };
-    }
+    return googleAuthSignIn();
   };
 
   /**

@@ -1,5 +1,5 @@
 module.exports = {
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   transform: {
     '^.+\\.(ts|tsx|js|jsx)$': ['babel-jest', {
       presets: [
@@ -13,7 +13,7 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|react-navigation|@react-navigation/.*|native-base|react-native-svg|firebase|@firebase|@testing-library)',
   ],
-  setupFiles: ['./jest.setup.js'],
+  setupFilesAfterEnv: ['./jest.setup.js'],
   testPathIgnorePatterns: [
     'firebase\\.mock\\.ts$',
     'node_modules/',
@@ -21,6 +21,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   moduleNameMapper: {
     '^react-native$': '<rootDir>/__mocks__/react-native.js',
-    '^react-native/(.*)$': '<rootDir>/__mocks__/react-native.js',
+    '^@theme/(.*)$': '<rootDir>/src/theme/$1',
+    '^@components/(.*)$': '<rootDir>/src/components/$1',
   },
 };

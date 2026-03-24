@@ -5,21 +5,8 @@ jest.mock('react-dom/server', () => ({
   renderToString: jest.fn(() => '<div></div>'),
 }));
 
-// Ensure react-native resolves to the local mock (moduleNameMapper sometimes misses edge cases)
-jest.mock('react-native', () => require('./__mocks__/react-native.js'));
-jest.mock('react-native/Libraries/StyleSheet/StyleSheet', () => {
-  const rn = require('./__mocks__/react-native.js');
-  return rn.StyleSheet;
-});
-
-// Mock StyleSheet globally to ensure it's available before imports
-global.StyleSheet = {
-  create: jest.fn((styles) => styles),
-  flatten: jest.fn((style) => style || {}),
-  absoluteFillObject: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
-  hairlineWidth: 1,
-  compose: jest.fn((style1, style2) => ({ ...style1, ...style2 })),
-};
+// react-native is handled by moduleNameMapper in jest.config.js
+// Do NOT use jest.mock('react-native', ...) here — it conflicts with moduleNameMapper in setupFilesAfterEnv
 
 // Mock Dimensions globally
 jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
@@ -31,55 +18,144 @@ jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
   removeEventListener: jest.fn(),
 }));
 
-// Mock @testing-library/react-native with proper mocks
+// Mock @testing-library/react-native using react-test-renderer for full hook support
 jest.mock('@testing-library/react-native', () => {
   const React = require('react');
-  
-  return {
-    render: (component) => ({
-      getByText: jest.fn(),
-      getByTestId: jest.fn(),
-      queryByText: jest.fn(),
-      queryByTestId: jest.fn(),
-      findByText: jest.fn(),
-      findByTestId: jest.fn(),
-      toJSON: jest.fn(() => ({ type: 'View', props: {} })),
-      unmount: jest.fn(),
-      rerender: jest.fn(),
-      container: { childNodes: [] },
-    }),
-    renderHook: (hookFn, options = {}) => {
-      let result = { current: undefined };
-      const wrapper = options.wrapper || (({ children }) => children);
-      
-      // Simple synchronous render for hook testing
-      try {
-        const TestComponent = () => {
-          result.current = hookFn();
-          return null;
-        };
-        React.createElement(wrapper, { children: React.createElement(TestComponent) });
-      } catch (e) {
-        // Ignore render errors in test environment
+  const TestRenderer = require('react-test-renderer');
+
+  // Walk react-test-renderer JSON tree
+  const walkTree = (node, predicate) => {
+    if (!node) return null;
+    if (typeof node === 'string') return predicate(node) ? node : null;
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const found = walkTree(child, predicate);
+        if (found) return found;
       }
-      
-      return { 
-        result,
-        rerender: jest.fn(),
-        unmount: jest.fn(),
-      };
-    },
-    act: async (fn) => { 
-      await fn(); 
+      return null;
+    }
+    if (predicate(node)) return node;
+    for (const child of (node.children || [])) {
+      const found = walkTree(child, predicate);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  // Find the nearest ancestor (or self) with onPress, respecting disabled
+  const findOnPress = (instance) => {
+    let current = instance;
+    while (current) {
+      if (current.props && current.props.disabled) return null;
+      if (current.props && current.props.onPress) return current.props.onPress;
+      current = current.parent;
+    }
+    return null;
+  };
+
+  const render = (component) => {
+    let renderer;
+    TestRenderer.act(() => {
+      renderer = TestRenderer.create(component);
+    });
+
+    const getByText = (text) => {
+      const root = renderer.root;
+      try {
+        const nodes = root.findAll(node => {
+          try {
+            return node.children && node.children.some(c => typeof c === 'string' && c === text);
+          } catch(e) { return false; }
+        });
+        if (nodes.length > 0) {
+          const inst = nodes[0];
+          return { props: inst.props, children: inst.children, _instance: inst, type: inst.type };
+        }
+      } catch(e) { /* fall through */ }
+      throw new Error(`Unable to find text: ${text}`);
+    };
+
+    const getByTestId = (testId) => {
+      const root = renderer.root;
+      try {
+        const nodes = root.findAll(node => {
+          try {
+            return node.props && (node.props.testID === testId || node.props['data-testid'] === testId);
+          } catch(e) { return false; }
+        });
+        if (nodes.length > 0) {
+          const inst = nodes[0];
+          return { props: inst.props, children: inst.children, _instance: inst, type: inst.type };
+        }
+      } catch(e) { /* fall through */ }
+      throw new Error(`Unable to find testID: ${testId}`);
+    };
+
+    const queryByText = (text) => { try { return getByText(text); } catch(e) { return null; } };
+    const queryByTestId = (testId) => { try { return getByTestId(testId); } catch(e) { return null; } };
+
+    return {
+      getByText,
+      getByTestId,
+      queryByText,
+      queryByTestId,
+      findByText: async (text) => getByText(text),
+      findByTestId: async (testId) => getByTestId(testId),
+      toJSON: () => renderer.toJSON(),
+      unmount: () => { TestRenderer.act(() => { renderer.unmount(); }); },
+      rerender: (newComponent) => { TestRenderer.act(() => { renderer.update(newComponent); }); },
+    };
+  };
+
+  const renderHook = (hookFn, options = {}) => {
+    const Wrapper = options.wrapper || (({ children }) => children);
+    const mockResult = { current: undefined };
+
+    const TestComponent = () => {
+      mockResult.current = hookFn();
+      return null;
+    };
+
+    let renderer;
+    TestRenderer.act(() => {
+      renderer = TestRenderer.create(
+        React.createElement(Wrapper, null, React.createElement(TestComponent))
+      );
+    });
+
+    return {
+      result: mockResult,
+      rerender: jest.fn(),
+      unmount: () => renderer && TestRenderer.act(() => renderer.unmount()),
+    };
+  };
+
+  return {
+    render,
+    renderHook,
+    act: async (fn) => {
+      await TestRenderer.act(async () => { await fn(); });
     },
     fireEvent: {
-      press: jest.fn(),
-      changeText: jest.fn(),
+      press: jest.fn((el) => {
+        // Use _instance (react-test-renderer instance) to walk up and find onPress
+        if (el && el._instance) {
+          const handler = findOnPress(el._instance);
+          if (handler) handler();
+        } else if (el && el.props && el.props.onPress) {
+          el.props.onPress();
+        }
+      }),
+      changeText: jest.fn((el, text) => {
+        if (el && el._instance && el._instance.props && el._instance.props.onChangeText) {
+          el._instance.props.onChangeText(text);
+        } else if (el && el.props && el.props.onChangeText) {
+          el.props.onChangeText(text);
+        }
+      }),
       scroll: jest.fn(),
     },
-    waitFor: async (fn) => {
-      return await fn();
-    },
+    waitFor: async (fn) => { return await fn(); },
     screen: {
       getByText: jest.fn(),
       getByTestId: jest.fn(),
@@ -97,15 +173,20 @@ jest.mock('firebase/app', () => ({
 // Mock firebase/auth
 jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(() => 'mock-auth'),
+  initializeAuth: jest.fn(() => 'mock-auth'),
   onAuthStateChanged: jest.fn((_auth, cb) => { cb(null); return jest.fn(); }),
   signInWithEmailAndPassword: jest.fn(),
   createUserWithEmailAndPassword: jest.fn(),
   signOut: jest.fn(),
   sendPasswordResetEmail: jest.fn(),
+  browserLocalPersistence: 'mock-browser-local-persistence',
+  browserPopupRedirectResolver: 'mock-browser-popup-redirect-resolver',
   GoogleAuthProvider: jest.fn().mockImplementation(() => ({ addScope: jest.fn() })),
   FacebookAuthProvider: jest.fn().mockImplementation(() => ({ addScope: jest.fn() })),
   OAuthProvider: jest.fn().mockImplementation(() => ({ addScope: jest.fn() })),
   signInWithPopup: jest.fn(),
+  signInWithRedirect: jest.fn().mockResolvedValue(undefined),
+  getRedirectResult: jest.fn().mockResolvedValue(null),
   signInWithCredential: jest.fn(),
   updateProfile: jest.fn(),
 }));
