@@ -20,6 +20,8 @@ import { WeatherAlertSettingsScreen } from '../screens/weather/WeatherAlertSetti
 // Market screens
 import { MarketIntelligenceScreen } from '../screens/market/MarketIntelligenceScreen';
 import { BuyerManagementScreen } from '../screens/market/BuyerManagementScreen';
+// Community (nested navigator for notification deep-links)
+import { CommunityStack } from './CommunityStack';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -54,6 +56,8 @@ export const AppNavigator: React.FC = () => {
           {/* Market */}
           <Stack.Screen name="MarketIntelligence" component={MarketIntelligenceScreen} />
           <Stack.Screen name="BuyerManagement" component={BuyerManagementScreen} />
+          {/* Community deep-link from notifications */}
+          <Stack.Screen name="Community" component={CommunityStack} />
         </>
       ) : (
         <Stack.Screen name="Auth" component={AuthStack} />

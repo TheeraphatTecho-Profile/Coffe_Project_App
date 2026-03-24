@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   RefreshControl,
   TextInput,
   Image,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -30,6 +31,68 @@ const POST_TYPES = [
   { key: 'market', label: 'ตลาด', icon: 'storefront-outline' },
 ];
 
+const PostCard = React.memo(({ post, onLike, onPress, formatDate, getPostTypeIcon, getPostTypeColor }: {
+  post: CommunityPost;
+  onLike: (id: string, likes: number, liked: boolean) => void;
+  onPress: (id: string) => void;
+  formatDate: (ts: any) => string;
+  getPostTypeIcon: (type: string) => string;
+  getPostTypeColor: (type: string) => string;
+}) => (
+  <TouchableOpacity style={styles.postCard} onPress={() => onPress(post.id)}>
+    {post.is_pinned && (
+      <View style={styles.pinnedBadge}>
+        <Ionicons name="pin" size={12} color={COLORS.white} />
+        <Text style={styles.pinnedText}>ปักหมุด</Text>
+      </View>
+    )}
+    <View style={styles.postHeader}>
+      <View style={styles.authorAvatar}>
+        <Text style={styles.avatarText}>{post.author_name?.charAt(0) || 'U'}</Text>
+      </View>
+      <View style={styles.authorInfo}>
+        <Text style={styles.authorName}>{post.author_name}</Text>
+        <Text style={styles.postMeta}>{post.author_province} • {formatDate(post.created_at)}</Text>
+      </View>
+      <TouchableOpacity style={styles.moreButton}>
+        <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
+      </TouchableOpacity>
+    </View>
+    <View style={styles.postTypeTag}>
+      <Ionicons name={getPostTypeIcon(post.post_type) as any} size={14} color={getPostTypeColor(post.post_type)} />
+      <Text style={[styles.postTypeText, { color: getPostTypeColor(post.post_type) }]}>
+        {POST_TYPES.find(t => t.key === post.post_type)?.label || post.post_type}
+      </Text>
+    </View>
+    <Text style={styles.postTitle}>{post.title}</Text>
+    <Text style={styles.postContent} numberOfLines={3}>{post.content}</Text>
+    {post.image_url && <Image source={{ uri: post.image_url }} style={styles.postImage} />}
+    {post.tags.length > 0 && (
+      <View style={styles.tagsContainer}>
+        {post.tags.slice(0, 3).map((tag, index) => (
+          <View key={index} style={styles.tag}>
+            <Text style={styles.tagText}>#{tag}</Text>
+          </View>
+        ))}
+      </View>
+    )}
+    <View style={styles.postActions}>
+      <TouchableOpacity style={styles.actionButton} onPress={() => onLike(post.id, post.likes_count, !!post.user_liked)}>
+        <Ionicons name={post.user_liked ? 'heart' : 'heart-outline'} size={20} color={post.user_liked ? COLORS.error : COLORS.textSecondary} />
+        <Text style={[styles.actionText, post.user_liked && { color: COLORS.error }]}>{post.likes_count}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.actionButton} onPress={() => onPress(post.id)}>
+        <Ionicons name="chatbubble-outline" size={20} color={COLORS.textSecondary} />
+        <Text style={styles.actionText}>{post.comments_count}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.actionButton}>
+        <Ionicons name="share-outline" size={20} color={COLORS.textSecondary} />
+        <Text style={styles.actionText}>แชร์</Text>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+));
+
 export const CommunityScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -37,6 +100,8 @@ export const CommunityScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadPosts = useCallback(async () => {
     try {
@@ -77,9 +142,15 @@ export const CommunityScreen: React.FC<Props> = ({ navigation }) => {
         )
       );
     } catch (error) {
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถกดไลค์ได้');
+      showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถกดไลค์ได้');
     }
   };
+
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setDebouncedSearch(text), 300);
+  }, []);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return '';
@@ -113,101 +184,61 @@ export const CommunityScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPosts = useMemo(() => posts.filter(post =>
+    post.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    post.content.toLowerCase().includes(debouncedSearch.toLowerCase())
+  ), [posts, debouncedSearch]);
 
-  const renderPost = (post: CommunityPost) => (
-    <TouchableOpacity
-      key={post.id}
-      style={styles.postCard}
-      onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
-    >
-      {post.is_pinned && (
-        <View style={styles.pinnedBadge}>
-          <Ionicons name="pin" size={12} color={COLORS.white} />
-          <Text style={styles.pinnedText}>ปักหมุด</Text>
-        </View>
-      )}
+  const handlePostPress = useCallback((postId: string) => {
+    navigation.navigate('PostDetail', { postId });
+  }, [navigation]);
 
-      <View style={styles.postHeader}>
-        <View style={styles.authorAvatar}>
-          <Text style={styles.avatarText}>
-            {post.author_name?.charAt(0) || 'U'}
-          </Text>
-        </View>
-        <View style={styles.authorInfo}>
-          <Text style={styles.authorName}>{post.author_name}</Text>
-          <Text style={styles.postMeta}>
-            {post.author_province} • {formatDate(post.created_at)}
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
-      </View>
+  const renderItem = useCallback(({ item }: { item: CommunityPost }) => (
+    <PostCard
+      post={item}
+      onLike={handleLike}
+      onPress={handlePostPress}
+      formatDate={formatDate}
+      getPostTypeIcon={getPostTypeIcon}
+      getPostTypeColor={getPostTypeColor}
+    />
+  ), [handleLike, handlePostPress]);
 
-      <View style={styles.postTypeTag}>
-        <Ionicons 
-          name={getPostTypeIcon(post.post_type) as any} 
-          size={14} 
-          color={getPostTypeColor(post.post_type)} 
-        />
-        <Text style={[styles.postTypeText, { color: getPostTypeColor(post.post_type) }]}>
-          {POST_TYPES.find(t => t.key === post.post_type)?.label || post.post_type}
-        </Text>
-      </View>
+  const keyExtractor = useCallback((item: CommunityPost) => item.id, []);
 
-      <Text style={styles.postTitle}>{post.title}</Text>
-      <Text style={styles.postContent} numberOfLines={3}>
-        {post.content}
-      </Text>
+  const ListHeader = useMemo(() => (
+    <View style={styles.listHeader}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.typeFilter}
+        contentContainerStyle={styles.typeFilterContent}
+      >
+        {POST_TYPES.map(type => (
+          <TouchableOpacity
+            key={type.key}
+            style={[styles.typeChip, selectedType === type.key && styles.typeChipActive]}
+            onPress={() => setSelectedType(type.key)}
+          >
+            <Ionicons name={type.icon as any} size={16} color={selectedType === type.key ? COLORS.white : COLORS.textSecondary} />
+            <Text style={[styles.typeChipText, selectedType === type.key && styles.typeChipTextActive]}>{type.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  ), [selectedType]);
 
-      {post.image_url && (
-        <Image source={{ uri: post.image_url }} style={styles.postImage} />
-      )}
-
-      {post.tags.length > 0 && (
-        <View style={styles.tagsContainer}>
-          {post.tags.slice(0, 3).map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      <View style={styles.postActions}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => handleLike(post.id, post.likes_count, !!post.user_liked)}
-        >
-          <Ionicons 
-            name={post.user_liked ? 'heart' : 'heart-outline'} 
-            size={20} 
-            color={post.user_liked ? COLORS.error : COLORS.textSecondary} 
-          />
-          <Text style={[styles.actionText, post.user_liked && { color: COLORS.error }]}>
-            {post.likes_count}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('PostDetail', { postId: post.id })}
-        >
-          <Ionicons name="chatbubble-outline" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.actionText}>{post.comments_count}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="share-outline" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.actionText}>แชร์</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+  const ListEmpty = useMemo(() => (
+    <View style={styles.emptyState}>
+      <Ionicons name="chatbubbles-outline" size={64} color={COLORS.borderLight} />
+      <Text style={styles.emptyTitle}>ยังไม่มีโพสต์</Text>
+      <Text style={styles.emptyText}>เป็นคนแรกที่แชร์ความรู้ให้ชุมชน</Text>
+      <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('CreatePost')}>
+        <Ionicons name="add" size={20} color={COLORS.white} />
+        <Text style={styles.createButtonText}>สร้างโพสต์</Text>
+      </TouchableOpacity>
+    </View>
+  ), [navigation]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -236,72 +267,30 @@ export const CommunityScreen: React.FC<Props> = ({ navigation }) => {
           placeholder="ค้นหาในชุมชน..."
           placeholderTextColor={COLORS.textSecondary}
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={handleSearchChange}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <TouchableOpacity onPress={() => { setSearchQuery(''); setDebouncedSearch(''); }}>
             <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
 
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.typeFilter}
-        contentContainerStyle={styles.typeFilterContent}
-      >
-        {POST_TYPES.map(type => (
-          <TouchableOpacity
-            key={type.key}
-            style={[
-              styles.typeChip,
-              selectedType === type.key && styles.typeChipActive
-            ]}
-            onPress={() => setSelectedType(type.key)}
-          >
-            <Ionicons 
-              name={type.icon as any} 
-              size={16} 
-              color={selectedType === type.key ? COLORS.white : COLORS.textSecondary} 
-            />
-            <Text style={[
-              styles.typeChipText,
-              selectedType === type.key && styles.typeChipTextActive
-            ]}>
-              {type.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <ScrollView
-        style={styles.feed}
+      <FlatList
+        data={filteredPosts}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={loading ? null : ListEmpty}
         contentContainerStyle={styles.feedContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
-      >
-        {filteredPosts.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={64} color={COLORS.borderLight} />
-            <Text style={styles.emptyTitle}>ยังไม่มีโพสต์</Text>
-            <Text style={styles.emptyText}>
-              เป็นคนแรกที่แชร์ความรู้ให้ชุมชน
-            </Text>
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => navigation.navigate('CreatePost')}
-            >
-              <Ionicons name="add" size={20} color={COLORS.white} />
-              <Text style={styles.createButtonText}>สร้างโพสต์</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          filteredPosts.map(renderPost)
-        )}
-      </ScrollView>
+        removeClippedSubviews
+        maxToRenderPerBatch={8}
+        initialNumToRender={6}
+        windowSize={8}
+        updateCellsBatchingPeriod={50}
+      />
     </SafeAreaView>
   );
 };
@@ -354,7 +343,7 @@ const styles = StyleSheet.create({
   typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   typeChipText: { fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
   typeChipTextActive: { color: COLORS.white, fontWeight: '600' },
-  feed: { flex: 1 },
+  listHeader: { paddingBottom: SPACING.sm },
   feedContent: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxxxl, gap: SPACING.lg },
   postCard: {
     backgroundColor: COLORS.white,
