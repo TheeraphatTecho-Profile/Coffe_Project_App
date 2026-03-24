@@ -1,54 +1,137 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if user is authenticated
+
+    // ============================================================
+    // NAMING CONVENTION NOTE
+    // Legacy collections (farms, harvests, users, photos,
+    // notifications, push_tokens) use snake_case field names
+    // (e.g. user_id, farm_id) — matching their TypeScript interfaces.
+    // Newer collections (costs, maintenance_*, weather_*, market_*)
+    // use camelCase field names (e.g. userId, farmId) — matching
+    // their TypeScript interfaces.
+    // Both conventions are intentional and internally consistent.
+    // ============================================================
+
+    // ── Core helpers ──────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function to check if user owns the data
+
     function isOwner(resourceUserId) {
       return request.auth.uid == resourceUserId;
     }
-    
-    // Helper function to validate farm data
+
+    // ── Legacy collection validators (snake_case) ─────────────────
+
     function isValidFarmData() {
-      return request.resource.data.keys().hasAll([
-        'name', 'area', 'province', 'user_id', 'created_at'
-      ]) &&
-      request.resource.data.name is string &&
-      request.resource.data.name.size() > 0 &&
-      request.resource.data.name.size() <= 100 &&
-      request.resource.data.area is number &&
-      request.resource.data.area >= 0 &&
-      request.resource.data.area <= 10000 &&
-      request.resource.data.province is string &&
-      request.resource.data.province.size() > 0 &&
-      request.resource.data.user_id is string &&
-      request.resource.data.user_id == request.auth.uid;
+      let d = request.resource.data;
+      return d.keys().hasAll(['name', 'area', 'province', 'user_id', 'created_at']) &&
+        d.name is string && d.name.size() > 0 && d.name.size() <= 100 &&
+        d.area is number && d.area >= 0 && d.area <= 100000 &&
+        d.province is string && d.province.size() > 0 &&
+        d.user_id is string && d.user_id == request.auth.uid;
     }
-    
-    // Helper function to validate harvest data
+
     function isValidHarvestData() {
-      return request.resource.data.keys().hasAll([
-        'farm_id', 'harvest_date', 'weight_kg', 'income', 'shift', 'user_id', 'created_at'
-      ]) &&
-      request.resource.data.farm_id is string &&
-      request.resource.data.farm_id.size() > 0 &&
-      request.resource.data.harvest_date is timestamp &&
-      request.resource.data.weight_kg is number &&
-      request.resource.data.weight_kg > 0 &&
-      request.resource.data.weight_kg <= 10000 &&
-      request.resource.data.income is number &&
-      request.resource.data.income >= 0 &&
-      request.resource.data.income <= 1000000 &&
-      request.resource.data.shift in ['morning', 'afternoon'] &&
-      request.resource.data.user_id is string &&
-      request.resource.data.user_id == request.auth.uid;
+      let d = request.resource.data;
+      return d.keys().hasAll(['farm_id', 'harvest_date', 'weight_kg', 'income', 'shift', 'user_id', 'created_at']) &&
+        d.farm_id is string && d.farm_id.size() > 0 &&
+        d.harvest_date is timestamp &&
+        d.weight_kg is number && d.weight_kg > 0 && d.weight_kg <= 50000 &&
+        d.income is number && d.income >= 0 && d.income <= 10000000 &&
+        d.shift in ['morning', 'afternoon', 'evening'] &&
+        d.user_id is string && d.user_id == request.auth.uid;
     }
-    
-    // Farms collection - users can only access their own farms
+
+    // ── New collection validators (camelCase) ─────────────────────
+
+    function isValidCostData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'farmId', 'category', 'amount', 'totalCost', 'date', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.farmId is string && d.farmId.size() > 0 &&
+        d.category in ['fertilizer', 'labor', 'water', 'equipment', 'maintenance', 'other'] &&
+        d.amount is number && d.amount >= 0 && d.amount <= 100000000 &&
+        d.totalCost is number && d.totalCost >= 0 &&
+        d.date is string && d.date.size() > 0;
+    }
+
+    function isValidMaintenanceTaskData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'farmId', 'title', 'type', 'priority', 'status', 'scheduledDate', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.farmId is string && d.farmId.size() > 0 &&
+        d.title is string && d.title.size() > 0 && d.title.size() <= 200 &&
+        d.type in ['pruning', 'fertilizing', 'watering', 'harvesting', 'pest_control', 'planting', 'other'] &&
+        d.priority in ['low', 'medium', 'high', 'urgent'] &&
+        d.status in ['pending', 'in_progress', 'completed', 'skipped'] &&
+        d.scheduledDate is string && d.scheduledDate.size() > 0;
+    }
+
+    function isValidMaintenanceCalendarData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'farmId', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.farmId is string && d.farmId.size() > 0;
+    }
+
+    function isValidMaintenanceEquipmentData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'name', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.name is string && d.name.size() > 0 && d.name.size() <= 200;
+    }
+
+    function isValidWeatherAlertData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'farmId', 'type', 'severity', 'title', 'isActive', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.farmId is string && d.farmId.size() > 0 &&
+        d.type in ['frost', 'heavy_rain', 'storm', 'drought', 'heat_wave', 'cold_snap', 'wind', 'humidity'] &&
+        d.severity in ['low', 'medium', 'high', 'extreme'] &&
+        d.title is string && d.title.size() > 0 && d.title.size() <= 200 &&
+        d.isActive is bool;
+    }
+
+    function isValidWeatherSettingsData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'farmId', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.farmId is string && d.farmId.size() > 0;
+    }
+
+    function isValidBuyerData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'name', 'type', 'isActive', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.name is string && d.name.size() > 0 && d.name.size() <= 200 &&
+        d.type in ['local', 'regional', 'national', 'international', 'cooperative', 'processor', 'roaster', 'exporter'] &&
+        d.isActive is bool;
+    }
+
+    function isValidMarketPriceData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid;
+    }
+
+    function isValidMarketTransactionData() {
+      let d = request.resource.data;
+      return d.keys().hasAll(['userId', 'buyerId', 'amount', 'totalValue', 'date', 'createdAt']) &&
+        d.userId is string && d.userId == request.auth.uid &&
+        d.buyerId is string && d.buyerId.size() > 0 &&
+        d.amount is number && d.amount > 0 &&
+        d.totalValue is number && d.totalValue >= 0 &&
+        d.date is string && d.date.size() > 0;
+    }
+
+    // =============================================================
+    // COLLECTIONS
+    // =============================================================
+
+    // ── farms ─────────────────────────────────────────────────────
     match /farms/{farmId} {
       allow read: if isAuthenticated() && isOwner(resource.data.user_id);
       allow create: if isAuthenticated() && isValidFarmData();
@@ -56,8 +139,8 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
     }
-    
-    // Harvests collection - users can only access their own harvests
+
+    // ── harvests ──────────────────────────────────────────────────
     match /harvests/{harvestId} {
       allow read: if isAuthenticated() && isOwner(resource.data.user_id);
       allow create: if isAuthenticated() && isValidHarvestData();
@@ -65,153 +148,154 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
     }
-    
-    // Users collection - restricted access
+
+    // ── users ─────────────────────────────────────────────────────
     match /users/{userId} {
       allow read, write: if isAuthenticated() && userId == request.auth.uid;
-      
-      // User profile validation
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.keys().hasAll(['uid', 'email', 'created_at']) &&
         request.resource.data.uid == request.auth.uid &&
         request.resource.data.email is string &&
         request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$');
     }
-    
-    // Photos collection - user-specific access
+
+    // ── photos ────────────────────────────────────────────────────
     match /photos/{photoId} {
       allow read: if isAuthenticated() && isOwner(resource.data.user_id);
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.user_id == request.auth.uid &&
         request.resource.data.type in ['farm', 'harvest', 'disease', 'pest', 'general'] &&
         request.resource.data.url is string &&
-        request.resource.data.url.size() > 0;
+        request.resource.data.url.size() > 0 &&
+        request.resource.data.url.size() <= 2048;
       allow update: if isAuthenticated() && isOwner(resource.data.user_id);
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
     }
-    
-    // Notifications collection - user-specific access
+
+    // ── notifications ─────────────────────────────────────────────
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && isOwner(resource.data.user_id);
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.user_id == request.auth.uid &&
         request.resource.data.type in ['harvest', 'care', 'weather', 'price', 'system'];
       allow update: if isAuthenticated() && isOwner(resource.data.user_id);
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
     }
-    
-    // ========== COST TRACKING ==========
-    
+
+    // ── costs ─────────────────────────────────────────────────────
     match /costs/{costId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidCostData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidCostData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
-    // ========== MAINTENANCE SYSTEM ==========
-    
+
+    // ── maintenance_tasks ─────────────────────────────────────────
     match /maintenance_tasks/{taskId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidMaintenanceTaskData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidMaintenanceTaskData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── maintenance_calendar ──────────────────────────────────────
     match /maintenance_calendar/{calendarId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidMaintenanceCalendarData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidMaintenanceCalendarData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── maintenance_equipment ─────────────────────────────────────
     match /maintenance_equipment/{equipmentId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidMaintenanceEquipmentData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidMaintenanceEquipmentData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
-    // ========== WEATHER ALERTS SYSTEM ==========
-    
+
+    // ── weather_alerts ────────────────────────────────────────────
     match /weather_alerts/{alertId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidWeatherAlertData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidWeatherAlertData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── farm_weather_profiles ─────────────────────────────────────
     match /farm_weather_profiles/{profileId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidWeatherSettingsData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidWeatherSettingsData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── weather_thresholds ────────────────────────────────────────
     match /weather_thresholds/{thresholdId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidWeatherSettingsData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidWeatherSettingsData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── weather_forecasts ─────────────────────────────────────────
     match /weather_forecasts/{forecastId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidWeatherSettingsData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidWeatherSettingsData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
-    // ========== MARKET INTELLIGENCE ==========
-    
+
+    // ── market_buyers ─────────────────────────────────────────────
     match /market_buyers/{buyerId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidBuyerData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidBuyerData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── market_prices ─────────────────────────────────────────────
     match /market_prices/{priceId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidMarketPriceData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidMarketPriceData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── market_insights ───────────────────────────────────────────
     match /market_insights/{insightId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidMarketPriceData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidMarketPriceData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
+
+    // ── market_transactions ───────────────────────────────────────
     match /market_transactions/{transactionId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isValidMarketTransactionData();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidMarketTransactionData();
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
       allow list: if isAuthenticated();
     }
-    
-    // ========== COMMUNITY FEATURES ==========
-    
-    // Community Posts - public read, authenticated write
+
+    // ── community_posts ───────────────────────────────────────────
     match /community_posts/{postId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.author_id == request.auth.uid &&
         request.resource.data.author_name is string &&
         request.resource.data.title is string &&
@@ -221,102 +305,100 @@ service cloud.firestore {
         request.resource.data.content.size() > 0 &&
         request.resource.data.content.size() <= 5000 &&
         request.resource.data.post_type in ['question', 'share', 'tips', 'announcement', 'market'];
-      allow update: if isAuthenticated() && 
+      allow update: if isAuthenticated() &&
         (isOwner(resource.data.author_id) ||
          resource.data.likes_count == request.resource.data.likes_count + 1 ||
          resource.data.comments_count == request.resource.data.comments_count + 1);
       allow delete: if isAuthenticated() && isOwner(resource.data.author_id);
       allow list: if isAuthenticated();
     }
-    
-    // Community Comments - public read, authenticated write
+
+    // ── community_comments ────────────────────────────────────────
     match /community_comments/{commentId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.author_id == request.auth.uid &&
         request.resource.data.post_id is string &&
+        request.resource.data.post_id.size() > 0 &&
         request.resource.data.content is string &&
         request.resource.data.content.size() > 0 &&
         request.resource.data.content.size() <= 1000;
-      allow update: if isAuthenticated() && 
+      allow update: if isAuthenticated() &&
         (isOwner(resource.data.author_id) ||
          resource.data.likes_count == request.resource.data.likes_count + 1);
       allow delete: if isAuthenticated() && isOwner(resource.data.author_id);
       allow list: if isAuthenticated();
     }
-    
-    // Community Groups - public read, authenticated create
+
+    // ── community_groups ──────────────────────────────────────────
     match /community_groups/{groupId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.name is string &&
         request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 100 &&
         request.resource.data.created_by == request.auth.uid;
-      allow update: if isAuthenticated() && 
+      allow update: if isAuthenticated() &&
         (isOwner(resource.data.created_by) ||
          resource.data.member_count == request.resource.data.member_count + 1);
       allow delete: if isAuthenticated() && isOwner(resource.data.created_by);
       allow list: if isAuthenticated();
     }
-    
-    // Community Reports - authenticated create only
+
+    // ── community_reports ─────────────────────────────────────────
     match /community_reports/{reportId} {
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.reporter_id == request.auth.uid &&
         request.resource.data.post_id is string &&
-        request.resource.data.reason is string;
+        request.resource.data.post_id.size() > 0 &&
+        request.resource.data.reason is string &&
+        request.resource.data.reason.size() > 0;
       allow read, update, delete: if false;
       allow list: if false;
     }
-    
-    // ========== SOCIAL FEATURES ==========
-    
-    // Push Tokens - user-specific
+
+    // ── push_tokens ───────────────────────────────────────────────
     match /push_tokens/{tokenId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
       allow create, update: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
       allow list: if false;
     }
-    
-    // Follows collection
+
+    // ── follows ───────────────────────────────────────────────────
     match /follows/{followId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
         request.resource.data.follower_id == request.auth.uid &&
         request.resource.data.following_id is string &&
         request.resource.data.following_id != request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.follower_id == request.auth.uid;
       allow list: if isAuthenticated();
     }
-    
-    // Conversations - participants only
+
+    // ── conversations ─────────────────────────────────────────────
     match /conversations/{conversationId} {
-      allow read: if isAuthenticated() && 
-        request.auth.uid in resource.data.participant_ids;
-      allow create: if isAuthenticated() && 
-        request.auth.uid in request.resource.data.participant_ids;
-      allow update: if isAuthenticated() && 
-        request.auth.uid in resource.data.participant_ids;
-      allow delete: if isAuthenticated() && 
-        request.auth.uid in resource.data.participant_ids;
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participant_ids;
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participant_ids;
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.participant_ids;
+      allow delete: if isAuthenticated() && request.auth.uid in resource.data.participant_ids;
       allow list: if isAuthenticated();
     }
-    
-    // Messages - conversation participants only
+
+    // ── messages ──────────────────────────────────────────────────
     match /messages/{messageId} {
-      allow read: if isAuthenticated() && 
-        resource.data.conversation_id is string;
-      allow create: if isAuthenticated() && 
+      allow read: if isAuthenticated() && resource.data.conversation_id is string;
+      allow create: if isAuthenticated() &&
         request.resource.data.sender_id == request.auth.uid &&
-        request.resource.data.content is string;
-      allow update: if isAuthenticated() && 
-        resource.data.sender_id == request.auth.uid;
+        request.resource.data.content is string &&
+        request.resource.data.content.size() > 0 &&
+        request.resource.data.content.size() <= 5000;
+      allow update: if isAuthenticated() && resource.data.sender_id == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.sender_id == request.auth.uid;
       allow list: if false;
     }
-    
-    // Deny all other access
+
+    // ── deny all other access ─────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
