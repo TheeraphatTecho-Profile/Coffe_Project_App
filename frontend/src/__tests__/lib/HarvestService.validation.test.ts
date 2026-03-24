@@ -13,10 +13,10 @@ describe('HarvestService Data Integrity', () => {
 
   // Helper function to create valid harvest data
   const createValidHarvest = (overrides: Partial<Harvest> = {}) => ({
-    farm_id: mockFarmId,
-    harvest_date: '2024-03-15',
+    farmId: mockFarmId,
+    harvestDate: '2024-03-15',
     variety: 'Arabica',
-    weight_kg: 50,
+    weightKg: 50,
     income: 5000,
     shift: 'morning',
     notes: 'Good harvest',
@@ -35,15 +35,15 @@ describe('HarvestService Data Integrity', () => {
         id: 'new-harvest-id',
         exists: () => true,
         data: () => ({
-          farm_id: mockFarmId,
-          harvest_date: '2024-03-15',
+          farmId: mockFarmId,
+          harvestDate: '2024-03-15',
           variety: 'Arabica',
-          weight_kg: 50,
+          weightKg: 50,
           income: 5000,
           shift: 'morning',
           notes: 'Good harvest',
-          user_id: mockUserId,
-          created_at: 'SERVER_TIMESTAMP',
+          userId: mockUserId,
+          createdAt: 'SERVER_TIMESTAMP',
         }),
       });
     });
@@ -58,8 +58,8 @@ describe('HarvestService Data Integrity', () => {
         expect.anything(), // collection reference
         {
           ...harvest,
-          user_id: mockUserId,
-          created_at: 'SERVER_TIMESTAMP',
+          userId: mockUserId,
+          createdAt: 'SERVER_TIMESTAMP',
         }
       );
     });
@@ -76,16 +76,16 @@ describe('HarvestService Data Integrity', () => {
       const result = await HarvestService.create(mockUserId, harvest);
       
       expect(result.id).toBe('new-harvest-id');
-      expect(result.user_id).toBe(mockUserId);
-      expect(result.farm_id).toBe(mockFarmId);
+      expect(result.userId).toBe(mockUserId);
+      expect(result.farmId).toBe(mockFarmId);
     });
 
     it('should handle any data passed to it (no validation)', async () => {
       const invalidHarvest = {
-        farm_id: '',
-        harvest_date: '',
+        farmId: '',
+        harvestDate: '',
         variety: null,
-        weight_kg: -100,
+        weightKg: -100,
         income: -500,
         shift: '',
         notes: null,
@@ -93,12 +93,12 @@ describe('HarvestService Data Integrity', () => {
       
       await expect(HarvestService.create(mockUserId, invalidHarvest)).resolves.toMatchObject({
         id: 'new-harvest-id',
-        user_id: mockUserId,
+        userId: mockUserId,
       });
     });
 
     it('should handle negative weight (no validation)', async () => {
-      const negativeWeightHarvest = createValidHarvest({ weight_kg: -50 });
+      const negativeWeightHarvest = createValidHarvest({ weightKg: -50 });
       await expect(HarvestService.create(mockUserId, negativeWeightHarvest)).resolves.toBeDefined();
     });
 
@@ -109,7 +109,7 @@ describe('HarvestService Data Integrity', () => {
 
     it('should handle extremely large values', async () => {
       const extremeHarvest = createValidHarvest({
-        weight_kg: 999999,
+        weightKg: 999999,
         income: 999999999,
       });
       await expect(HarvestService.create(mockUserId, extremeHarvest)).resolves.toBeDefined();
@@ -118,7 +118,7 @@ describe('HarvestService Data Integrity', () => {
 
   describe('update behavior', () => {
     it('should call updateDoc with correct parameters', async () => {
-      const updateData = { weight_kg: 100, income: 10000 };
+      const updateData = { weightKg: 100, income: 10000 };
       await HarvestService.update('harvest-id', updateData);
       
       expect(mockUpdateDoc).toHaveBeenCalledWith(
@@ -128,7 +128,7 @@ describe('HarvestService Data Integrity', () => {
     });
 
     it('should handle any update data (no validation)', async () => {
-      const invalidUpdate = { weight_kg: -200, income: -5000 };
+      const invalidUpdate = { weightKg: -200, income: -5000 };
       await expect(HarvestService.update('harvest-id', invalidUpdate)).resolves.toBeUndefined();
     });
   });
@@ -161,7 +161,7 @@ describe('HarvestService Data Integrity', () => {
 
     it('should handle invalid dates (no validation)', async () => {
       const invalidDateHarvest = createValidHarvest({
-        harvest_date: 'not-a-real-date',
+        harvestDate: 'not-a-real-date',
       });
       
       await expect(HarvestService.create(mockUserId, invalidDateHarvest)).resolves.toBeDefined();

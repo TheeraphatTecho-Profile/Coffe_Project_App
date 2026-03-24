@@ -42,14 +42,14 @@ export const AddFarmStep4Screen: React.FC<Props> = ({ navigation, route }) => {
       await FarmService.create(user.uid, {
         name: farmData.name,
         area: farmData.area,
-        soil_type: farmData.soil_type || null,
-        water_source: farmData.water_source || null,
+        soilType: farmData.soilType || null,
+        waterSource: farmData.waterSource || null,
         province: farmData.province || 'เลย',
         district: farmData.district || null,
         altitude: farmData.altitude || null,
         variety: variety === 'arabica' ? 'Arabica' : variety === 'robusta' ? 'Robusta' : 'อื่นๆ',
-        tree_count: treeCount ? parseInt(treeCount) : null,
-        planting_year: plantingYear ? parseInt(plantingYear) : null,
+        treeCount: treeCount ? parseInt(treeCount) : null,
+        plantingYear: plantingYear ? parseInt(plantingYear) : null,
         notes: notes || null,
       });
 

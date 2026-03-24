@@ -14,14 +14,14 @@ describe('FarmService Data Integrity', () => {
   const createValidFarm = (overrides: Partial<Farm> = {}) => ({
     name: 'Test Farm',
     area: 10,
-    soil_type: 'loam',
-    water_source: 'river',
+    soilType: 'loam',
+    waterSource: 'river',
     province: 'เลย',
     district: 'ภูเรือ',
     altitude: 600,
     variety: 'Arabica',
-    tree_count: 1000,
-    planting_year: 2020,
+    treeCount: 1000,
+    plantingYear: 2020,
     notes: 'Test farm',
     ...overrides,
   });
@@ -40,17 +40,17 @@ describe('FarmService Data Integrity', () => {
         data: () => ({
           name: 'Test Farm',
           area: 10,
-          soil_type: 'loam',
-          water_source: 'river',
+          soilType: 'loam',
+          waterSource: 'river',
           province: 'เลย',
           district: 'ภูเรือ',
           altitude: 600,
           variety: 'Arabica',
-          tree_count: 1000,
-          planting_year: 2020,
+          treeCount: 1000,
+          plantingYear: 2020,
           notes: 'Test farm',
-          user_id: mockUserId,
-          created_at: 'SERVER_TIMESTAMP',
+          userId: mockUserId,
+          createdAt: 'SERVER_TIMESTAMP',
         }),
       });
     });
@@ -65,8 +65,8 @@ describe('FarmService Data Integrity', () => {
         expect.anything(), // collection reference
         {
           ...farm,
-          user_id: mockUserId,
-          created_at: 'SERVER_TIMESTAMP',
+          userId: mockUserId,
+          createdAt: 'SERVER_TIMESTAMP',
         }
       );
     });
@@ -83,27 +83,27 @@ describe('FarmService Data Integrity', () => {
       const result = await FarmService.create(mockUserId, farm);
       
       expect(result.id).toBe('new-farm-id');
-      expect(result.user_id).toBe(mockUserId);
+      expect(result.userId).toBe(mockUserId);
     });
 
     it('should handle any data passed to it (no validation)', async () => {
       const invalidFarm = {
         name: '',
         area: -10,
-        soil_type: null,
-        water_source: null,
+        soilType: null,
+        waterSource: null,
         province: '',
         district: null,
         altitude: -1000,
         variety: null,
-        tree_count: -500,
-        planting_year: 3000,
+        treeCount: -500,
+        plantingYear: 3000,
         notes: null,
       };
       
       await expect(FarmService.create(mockUserId, invalidFarm)).resolves.toMatchObject({
         id: 'new-farm-id',
-        user_id: mockUserId,
+        userId: mockUserId,
       });
     });
   });
@@ -120,7 +120,7 @@ describe('FarmService Data Integrity', () => {
     });
 
     it('should handle any update data (no validation)', async () => {
-      const invalidUpdate = { area: -100, tree_count: -500 };
+      const invalidUpdate = { area: -100, treeCount: -500 };
       await expect(FarmService.update('farm-id', invalidUpdate)).resolves.toBeUndefined();
     });
   });
@@ -148,8 +148,8 @@ describe('FarmService Data Integrity', () => {
         notes: null,
         district: null,
         altitude: null,
-        tree_count: null,
-        planting_year: null,
+        treeCount: null,
+        plantingYear: null,
       });
       
       await expect(FarmService.create(mockUserId, farmWithNulls)).resolves.toBeDefined();

@@ -25,7 +25,7 @@ export const PriceScreen: React.FC = () => {
       setFarmStats(farms.map((f: any) => ({
         name: f.name || 'สวน',
         yield: f.area_rai || 0,
-        treeCount: f.tree_count || 0,
+        treeCount: f.treeCount || 0,
       })));
 
       setHarvestSummary({
@@ -37,9 +37,9 @@ export const PriceScreen: React.FC = () => {
       const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
       const monthTotals = new Array(12).fill(0);
       allHarvests.forEach((h: any) => {
-        if (h.harvest_date) {
-          const d = new Date(h.harvest_date);
-          monthTotals[d.getMonth()] += h.weight_kg || 0;
+        if (h.harvestDate) {
+          const d = new Date(h.harvestDate);
+          monthTotals[d.getMonth()] += h.weightKg || 0;
         }
       });
       setMonthlyData(monthNames.map((m, i) => ({ month: m, value: monthTotals[i] })));

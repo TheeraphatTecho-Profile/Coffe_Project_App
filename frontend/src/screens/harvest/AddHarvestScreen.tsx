@@ -62,10 +62,10 @@ export const AddHarvestScreen: React.FC<Props> = ({ navigation }) => {
     try {
       setLoading(true);
       await HarvestService.create(user.uid, {
-        farm_id: selectedFarm,
-        harvest_date: harvestDate,
+        farmId: selectedFarm,
+        harvestDate: harvestDate,
         variety: variety || null,
-        weight_kg: parseFloat(weightKg) || 0,
+        weightKg: parseFloat(weightKg) || 0,
         income: income ? parseFloat(income) : 0,
         shift: shift,
         notes: notes || null,

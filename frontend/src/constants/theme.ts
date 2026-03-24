@@ -51,9 +51,10 @@ export const COLORS = {
 } as const;
 
 export const FONTS = {
-  regular: 'System',
-  medium: 'System',
-  bold: 'System',
+  regular: 'Kanit_400Regular',
+  medium: 'Kanit_500Medium',
+  semiBold: 'Kanit_600SemiBold',
+  bold: 'Kanit_700Bold',
   sizes: {
     xs: 11,
     sm: 13,
@@ -62,6 +63,14 @@ export const FONTS = {
     xl: 20,
     xxl: 26,
     xxxl: 34,
+  },
+  weights: {
+    light: '300' as const,
+    regular: '400' as const,
+    medium: '500' as const,
+    semiBold: '600' as const,
+    bold: '700' as const,
+    extraBold: '800' as const,
   },
 } as const;
 

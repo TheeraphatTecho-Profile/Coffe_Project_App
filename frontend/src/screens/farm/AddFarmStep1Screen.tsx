@@ -38,7 +38,7 @@ export const AddFarmStep1Screen: React.FC<Props> = ({ navigation, route }) => {
       ...route.params?.farmData,
       name: farmName.trim(),
       area: parseFloat(area),
-      soil_type: soilType,
+      soilType: soilType,
     };
     navigation.navigate('AddFarmStep2', { farmData });
   };
