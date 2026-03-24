@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -71,9 +71,9 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       const { error } = await signUp(email, password, fullName);
       if (error) {
-        Alert.alert('สมัครสมาชิกไม่สำเร็จ', error.message);
+        showAlert('สมัครสมาชิกไม่สำเร็จ', error.message);
       } else {
-        Alert.alert('สำเร็จ', 'สมัครสมาชิกเรียบร้อยแล้ว');
+        showAlert('สำเร็จ', 'สมัครสมาชิกเรียบร้อยแล้ว');
       }
     } catch (err) {
       console.error('Register error:', err);
@@ -87,7 +87,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       const { error } = await signInWithGoogle();
       if (error) {
-        Alert.alert('สมัครด้วย Google ไม่สำเร็จ', error.message);
+        showAlert('สมัครด้วย Google ไม่สำเร็จ', error.message);
       }
     } catch (err) {
       console.error('Google signup error:', err);
@@ -101,7 +101,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       const { error } = await signInWithFacebook();
       if (error) {
-        Alert.alert('สมัครด้วย Facebook ไม่สำเร็จ', error.message);
+        showAlert('สมัครด้วย Facebook ไม่สำเร็จ', error.message);
       }
     } catch (err) {
       console.error('Facebook signup error:', err);
@@ -115,7 +115,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(true);
       const { error } = await signInWithLINE();
       if (error) {
-        Alert.alert('สมัครด้วย LINE ไม่สำเร็จ', error.message);
+        showAlert('สมัครด้วย LINE ไม่สำเร็จ', error.message);
       }
     } catch (err) {
       console.error('LINE signup error:', err);

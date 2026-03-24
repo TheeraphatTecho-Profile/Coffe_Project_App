@@ -256,139 +256,127 @@ export const HarvestScreen: React.FC = () => {
           </View>
         </View>
 
-        <ScrollView
-          style={styles.scrollContent}
+        <FlatList
+          data={filteredHarvests}
+          renderItem={renderHarvestItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={styles.scrollContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        >
-          {/* Section label */}
-          <Text style={styles.sectionLabel}>INVENTORY & YIELD</Text>
-          <Text style={styles.title}>รายการผลผลิต</Text>
-          <Text style={styles.subtitle}>
-            บันทึกการเก็บเกี่ยวจากไร่กาแฟบนขอบภูหลวง{' '}
-            ข้อมูลประวัติการเก็บเกี่ยวรายแปลงและรายได้รวมสะสม
-          </Text>
-
-          {/* Search bar */}
-          <View style={styles.searchBar}>
-            <Ionicons name="search-outline" size={18} color={COLORS.textLight} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="ค้นหาตามวันที่หรือรหัสแปลง..."
-              placeholderTextColor={COLORS.textLight}
-              defaultValue={filters.search}
-              onChangeText={handleSearchChange}
-            />
-          </View>
-
-          {/* Filters */}
-          <View style={styles.filtersSection}>
-            <View style={styles.filterHeader}>
-              <Text style={styles.filterLabel}>ปีการผลิต</Text>
-              {hasActiveFilters && (
-                <TouchableOpacity onPress={handleResetFilters}>
-                  <Text style={styles.resetText}>ล้างตัวกรอง</Text>
-                </TouchableOpacity>
-              )}
+          removeClippedSubviews
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+          windowSize={10}
+          ListHeaderComponent={
+            <View>
+              <Text style={styles.sectionLabel}>INVENTORY & YIELD</Text>
+              <Text style={styles.title}>รายการผลผลิต</Text>
+              <Text style={styles.subtitle}>
+                บันทึกการเก็บเกี่ยวจากไร่กาแฟบนขอบภูหลวง{' '}
+                ข้อมูลประวัติการเก็บเกี่ยวรายแปลงและรายได้รวมสะสม
+              </Text>
+              <View style={styles.searchBar}>
+                <Ionicons name="search-outline" size={18} color={COLORS.textLight} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="ค้นหาตามวันที่หรือรหัสแปลง..."
+                  placeholderTextColor={COLORS.textLight}
+                  defaultValue={filters.search}
+                  onChangeText={handleSearchChange}
+                />
+              </View>
+              <View style={styles.filtersSection}>
+                <View style={styles.filterHeader}>
+                  <Text style={styles.filterLabel}>ปีการผลิต</Text>
+                  {hasActiveFilters && (
+                    <TouchableOpacity onPress={handleResetFilters}>
+                      <Text style={styles.resetText}>ล้างตัวกรอง</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                  {yearOptions.map((year) => (
+                    <TouchableOpacity
+                      key={year}
+                      style={[styles.chip, filters.year === year && styles.chipActive]}
+                      onPress={() => handleFilterChange({ year })}
+                    >
+                      <Text style={[styles.chipText, filters.year === year && styles.chipTextActive]}>
+                        {year === 'ทั้งหมด' ? 'ทั้งหมด' : `พ.ศ. ${year}`}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <Text style={[styles.filterLabel, { marginTop: SPACING.lg }]}>รอบการเก็บเกี่ยว</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                  {SHIFT_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={[styles.chip, filters.shift === option.id && styles.chipActive]}
+                      onPress={() => handleFilterChange({ shift: option.id })}
+                    >
+                      <Text style={[styles.chipText, filters.shift === option.id && styles.chipTextActive]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <Text style={[styles.filterLabel, { marginTop: SPACING.lg }]}>เลือกสวน</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                  {farmOptions.map((farm) => (
+                    <TouchableOpacity
+                      key={farm.id}
+                      style={[styles.chip, filters.farmId === farm.id && styles.chipActive]}
+                      onPress={() => handleFilterChange({ farmId: farm.id })}
+                    >
+                      <Text style={[styles.chipText, filters.farmId === farm.id && styles.chipTextActive]}>
+                        {farm.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-              {yearOptions.map((year) => (
-                <TouchableOpacity
-                  key={year}
-                  style={[styles.chip, filters.year === year && styles.chipActive]}
-                  onPress={() => handleFilterChange({ year })}
-                >
-                  <Text style={[styles.chipText, filters.year === year && styles.chipTextActive]}>
-                    {year === 'ทั้งหมด' ? 'ทั้งหมด' : `พ.ศ. ${year}`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <Text style={[styles.filterLabel, { marginTop: SPACING.lg }]}>รอบการเก็บเกี่ยว</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-              {SHIFT_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  style={[styles.chip, filters.shift === option.id && styles.chipActive]}
-                  onPress={() => handleFilterChange({ shift: option.id })}
-                >
-                  <Text style={[styles.chipText, filters.shift === option.id && styles.chipTextActive]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <Text style={[styles.filterLabel, { marginTop: SPACING.lg }]}>เลือกสวน</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-              {farmOptions.map((farm) => (
-                <TouchableOpacity
-                  key={farm.id}
-                  style={[styles.chip, filters.farmId === farm.id && styles.chipActive]}
-                  onPress={() => handleFilterChange({ farmId: farm.id })}
-                >
-                  <Text style={[styles.chipText, filters.farmId === farm.id && styles.chipTextActive]}>
-                    {farm.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Harvest entries with FlatList for performance */}
-          {filteredHarvests.length === 0 ? (
+          }
+          ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Ionicons name="basket-outline" size={40} color={COLORS.textLight} />
               <Text style={styles.emptyTitle}>{emptyStateTexts.title}</Text>
               <Text style={styles.emptyText}>{emptyStateTexts.subtitle}</Text>
             </View>
-          ) : (
-            <FlatList
-              data={filteredHarvests}
-              renderItem={renderHarvestItem}
-              keyExtractor={keyExtractor}
-              style={styles.harvestList}
-              scrollEnabled={false}
-              removeClippedSubviews={true}
-              maxToRenderPerBatch={10}
-              updateCellsBatchingPeriod={50}
-              initialNumToRender={10}
-              windowSize={10}
-            />
-          )}
-
-          {/* Total yield card */}
-          <View style={styles.totalYieldCard}>
-            <Text style={styles.totalYieldLabel}>
-              ผลผลิตรวม {filters.year === 'ทั้งหมด' ? 'ทั้งหมด' : `พ.ศ. ${filters.year}`}
-            </Text>
-            <View style={styles.totalYieldRow}>
-              <Text style={styles.totalYieldValue}>{formatNumber(totalYield)}</Text>
-              <Text style={styles.totalYieldUnit}> กก.</Text>
-            </View>
-          </View>
-
-          {/* Total income card */}
-          <View style={styles.totalIncomeCard}>
-            <Text style={styles.totalIncomeLabel}>รายได้รวม</Text>
-            <Text style={styles.totalIncomeValue}>{formatNumber(totalIncome)}</Text>
-            <Text style={styles.totalIncomeUnit}>บาท</Text>
-          </View>
-
-          {shiftSummary.length > 0 && (
-            <View style={styles.shiftSummaryCard}>
-              <Text style={styles.sectionTitle}>สรุปรอบเก็บเกี่ยว</Text>
-              {shiftSummary.map((item) => (
-                <View key={item.id} style={styles.shiftSummaryRow}>
-                  <Text style={styles.shiftSummaryLabel}>{item.label}</Text>
-                  <Text style={styles.shiftSummaryValue}>
-                    {item.count} ครั้ง • {formatNumber(item.totalWeight)} กก.
-                  </Text>
+          }
+          ListFooterComponent={
+            <View>
+              <View style={styles.totalYieldCard}>
+                <Text style={styles.totalYieldLabel}>
+                  ผลผลิตรวม {filters.year === 'ทั้งหมด' ? 'ทั้งหมด' : `พ.ศ. ${filters.year}`}
+                </Text>
+                <View style={styles.totalYieldRow}>
+                  <Text style={styles.totalYieldValue}>{formatNumber(totalYield)}</Text>
+                  <Text style={styles.totalYieldUnit}> กก.</Text>
                 </View>
-              ))}
+              </View>
+              <View style={styles.totalIncomeCard}>
+                <Text style={styles.totalIncomeLabel}>รายได้รวม</Text>
+                <Text style={styles.totalIncomeValue}>{formatNumber(totalIncome)}</Text>
+                <Text style={styles.totalIncomeUnit}>บาท</Text>
+              </View>
+              {shiftSummary.length > 0 && (
+                <View style={styles.shiftSummaryCard}>
+                  <Text style={styles.sectionTitle}>สรุปรอบเก็บเกี่ยว</Text>
+                  {shiftSummary.map((item) => (
+                    <View key={item.id} style={styles.shiftSummaryRow}>
+                      <Text style={styles.shiftSummaryLabel}>{item.label}</Text>
+                      <Text style={styles.shiftSummaryValue}>
+                        {item.count} ครั้ง • {formatNumber(item.totalWeight)} กก.
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
-          )}
-        </ScrollView>
+          }
+        />
 
         {/* FAB */}
         <TouchableOpacity

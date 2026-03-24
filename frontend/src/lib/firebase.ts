@@ -6,7 +6,12 @@ import {
   browserPopupRedirectResolver,
   Auth,
 } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  Firestore,
+} from 'firebase/firestore';
 import { Platform } from 'react-native';
 
 const firebaseConfig = {
@@ -43,9 +48,19 @@ const auth: Auth = (() => {
 })();
 
 /**
- * Firestore instance — used for all database operations.
+ * Firestore instance with offline persistence.
+ * - Web: IndexedDB cache via persistentLocalCache
+ * - Native: local SQLite cache via persistentLocalCache
  */
-const db: Firestore = getFirestore(app);
+const db: Firestore = (() => {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache(),
+    });
+  } catch {
+    return getFirestore(app);
+  }
+})();
 
 export { app, auth, db };
 export type FirebaseUser = import('firebase/auth').User;
