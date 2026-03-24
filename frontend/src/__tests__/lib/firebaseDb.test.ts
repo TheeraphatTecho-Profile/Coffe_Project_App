@@ -187,6 +187,8 @@ describe('FarmService', () => {
 describe('HarvestService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear internal farm name cache to prevent cross-test pollution
+    HarvestService._farmNameCache = {};
   });
 
   describe('getAll', () => {

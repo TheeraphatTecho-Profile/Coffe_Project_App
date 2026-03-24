@@ -123,17 +123,17 @@ describe('Integration Tests', () => {
         data: () => ({
           name: 'Test Farm',
           area: 10,
-          soil_type: 'loam',
-          water_source: 'river',
+          soilType: 'loam',
+          waterSource: 'river',
           province: 'เลย',
           district: 'ภูเรือ',
           altitude: 600,
           variety: 'Arabica',
-          tree_count: 1000,
-          planting_year: 2020,
+          treeCount: 1000,
+          plantingYear: 2020,
           notes: 'Test farm',
-          user_id: 'test-uid',
-          created_at: 'SERVER_TIMESTAMP',
+          userId: 'test-uid',
+          createdAt: 'SERVER_TIMESTAMP',
         }),
       });
 
@@ -141,27 +141,27 @@ describe('Integration Tests', () => {
       const farmData = {
         name: 'Test Farm',
         area: 10,
-        soil_type: 'loam',
-        water_source: 'river',
+        soilType: 'loam',
+        waterSource: 'river',
         province: 'เลย',
         district: 'ภูเรือ',
         altitude: 600,
         variety: 'Arabica',
-        tree_count: 1000,
-        planting_year: 2020,
+        treeCount: 1000,
+        plantingYear: 2020,
         notes: 'Test farm',
       };
 
       const result = await FarmService.create('test-uid', farmData);
       
       expect(result.id).toBe('new-farm-id');
-      expect(result.user_id).toBe('test-uid');
+      expect(result.userId).toBe('test-uid');
       expect(mockAddDoc).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           ...farmData,
-          user_id: 'test-uid',
-          created_at: 'SERVER_TIMESTAMP',
+          userId: 'test-uid',
+          createdAt: 'SERVER_TIMESTAMP',
         })
       );
     });
@@ -179,7 +179,7 @@ describe('Integration Tests', () => {
             exists: () => true,
             data: () => ({
               name: 'Test Farm',
-              user_id: 'test-uid',
+              userId: 'test-uid',
             }),
           });
         }
@@ -188,15 +188,15 @@ describe('Integration Tests', () => {
           id: 'new-harvest-id',
           exists: () => true,
           data: () => ({
-            farm_id: 'test-farm-id',
-            harvest_date: '2024-03-15',
+            farmId: 'test-farm-id',
+            harvestDate: '2024-03-15',
             variety: 'Arabica',
-            weight_kg: 50,
+            weightKg: 50,
             income: 5000,
             shift: 'morning',
             notes: 'Good harvest',
-            user_id: 'test-uid',
-            created_at: 'SERVER_TIMESTAMP',
+            userId: 'test-uid',
+            createdAt: 'SERVER_TIMESTAMP',
           }),
         });
       });
@@ -205,10 +205,10 @@ describe('Integration Tests', () => {
 
       const { HarvestService } = require('../../lib/firebaseDb');
       const harvestData = {
-        farm_id: 'test-farm-id',
-        harvest_date: '2024-03-15',
+        farmId: 'test-farm-id',
+        harvestDate: '2024-03-15',
         variety: 'Arabica',
-        weight_kg: 50,
+        weightKg: 50,
         income: 5000,
         shift: 'morning',
         notes: 'Good harvest',
@@ -217,13 +217,13 @@ describe('Integration Tests', () => {
       const result = await HarvestService.create('test-uid', harvestData);
       
       expect(result.id).toBe('new-harvest-id');
-      expect(result.farm_id).toBe('test-farm-id');
+      expect(result.farmId).toBe('test-farm-id');
       expect(mockAddDoc).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           ...harvestData,
-          user_id: 'test-uid',
-          created_at: 'SERVER_TIMESTAMP',
+          userId: 'test-uid',
+          createdAt: 'SERVER_TIMESTAMP',
         })
       );
     });
