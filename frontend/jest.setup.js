@@ -18,46 +18,12 @@ jest.mock('react-native/Libraries/Utilities/Dimensions', () => ({
   removeEventListener: jest.fn(),
 }));
 
-// Mock @testing-library/react-native by manually resolving React element trees
+// Mock @testing-library/react-native using react-test-renderer for full hook support
 jest.mock('@testing-library/react-native', () => {
   const React = require('react');
+  const TestRenderer = require('react-test-renderer');
 
-  // Recursively resolve a React element into a plain tree
-  const resolveElement = (el, depth) => {
-    if (depth > 20) return null; // prevent infinite recursion
-    if (el == null || typeof el === 'boolean') return null;
-    if (typeof el === 'string' || typeof el === 'number') return String(el);
-    if (Array.isArray(el)) return el.map(c => resolveElement(c, depth + 1)).filter(Boolean);
-
-    // React element - function component
-    if (el.type && typeof el.type === 'function') {
-      try {
-        const result = el.type({ ...el.props });
-        return resolveElement(result, depth + 1);
-      } catch(e) {
-        // Hooks fail outside React runtime — fall back to rendering children
-        if (el.props && el.props.children) {
-          return resolveElement(el.props.children, depth + 1);
-        }
-        return null;
-      }
-    }
-
-    // Host element (string type like 'View', 'Text', 'div')
-    const props = { ...(el.props || {}) };
-    const rawChildren = props.children;
-    delete props.children;
-
-    let children = [];
-    if (rawChildren != null) {
-      const arr = Array.isArray(rawChildren) ? rawChildren : [rawChildren];
-      children = arr.map(c => resolveElement(c, depth + 1)).filter(Boolean);
-    }
-
-    return { type: el.type || 'unknown', props, children };
-  };
-
-  // Walk resolved tree
+  // Walk react-test-renderer JSON tree
   const walkTree = (node, predicate) => {
     if (!node) return null;
     if (typeof node === 'string') return predicate(node) ? node : null;
@@ -76,29 +42,53 @@ jest.mock('@testing-library/react-native', () => {
     return null;
   };
 
+  // Find the nearest ancestor (or self) with onPress, respecting disabled
+  const findOnPress = (instance) => {
+    let current = instance;
+    while (current) {
+      if (current.props && current.props.disabled) return null;
+      if (current.props && current.props.onPress) return current.props.onPress;
+      current = current.parent;
+    }
+    return null;
+  };
+
   const render = (component) => {
-    const resolved = resolveElement(component, 0);
+    let renderer;
+    TestRenderer.act(() => {
+      renderer = TestRenderer.create(component);
+    });
 
     const getByText = (text) => {
-      // Find a node that contains the text as a direct string child
-      const found = walkTree(resolved, (node) => {
-        if (typeof node === 'string') return node === text;
-        if (node.children) {
-          return node.children.some(c => typeof c === 'string' && c === text);
+      const root = renderer.root;
+      try {
+        const nodes = root.findAll(node => {
+          try {
+            return node.children && node.children.some(c => typeof c === 'string' && c === text);
+          } catch(e) { return false; }
+        });
+        if (nodes.length > 0) {
+          const inst = nodes[0];
+          return { props: inst.props, children: inst.children, _instance: inst, type: inst.type };
         }
-        return false;
-      });
-      if (!found) throw new Error(`Unable to find text: ${text}`);
-      return typeof found === 'string' ? { type: 'Text', props: {}, children: [found] } : found;
+      } catch(e) { /* fall through */ }
+      throw new Error(`Unable to find text: ${text}`);
     };
 
     const getByTestId = (testId) => {
-      const found = walkTree(resolved, (node) => {
-        if (typeof node === 'string') return false;
-        return node.props && (node.props.testID === testId || node.props['data-testid'] === testId);
-      });
-      if (!found) throw new Error(`Unable to find testID: ${testId}`);
-      return found;
+      const root = renderer.root;
+      try {
+        const nodes = root.findAll(node => {
+          try {
+            return node.props && (node.props.testID === testId || node.props['data-testid'] === testId);
+          } catch(e) { return false; }
+        });
+        if (nodes.length > 0) {
+          const inst = nodes[0];
+          return { props: inst.props, children: inst.children, _instance: inst, type: inst.type };
+        }
+      } catch(e) { /* fall through */ }
+      throw new Error(`Unable to find testID: ${testId}`);
     };
 
     const queryByText = (text) => { try { return getByText(text); } catch(e) { return null; } };
@@ -111,14 +101,13 @@ jest.mock('@testing-library/react-native', () => {
       queryByTestId,
       findByText: async (text) => getByText(text),
       findByTestId: async (testId) => getByTestId(testId),
-      toJSON: () => resolved,
-      unmount: jest.fn(),
-      rerender: jest.fn(),
+      toJSON: () => renderer.toJSON(),
+      unmount: () => { TestRenderer.act(() => { renderer.unmount(); }); },
+      rerender: (newComponent) => { TestRenderer.act(() => { renderer.update(newComponent); }); },
     };
   };
 
   const renderHook = (hookFn, options = {}) => {
-    const TestRenderer = require('react-test-renderer');
     const Wrapper = options.wrapper || (({ children }) => children);
     const mockResult = { current: undefined };
 
@@ -145,12 +134,25 @@ jest.mock('@testing-library/react-native', () => {
     render,
     renderHook,
     act: async (fn) => {
-      const TestRenderer = require('react-test-renderer');
       await TestRenderer.act(async () => { await fn(); });
     },
     fireEvent: {
-      press: jest.fn((el) => { if (el && el.props && el.props.onPress) el.props.onPress(); }),
-      changeText: jest.fn(),
+      press: jest.fn((el) => {
+        // Use _instance (react-test-renderer instance) to walk up and find onPress
+        if (el && el._instance) {
+          const handler = findOnPress(el._instance);
+          if (handler) handler();
+        } else if (el && el.props && el.props.onPress) {
+          el.props.onPress();
+        }
+      }),
+      changeText: jest.fn((el, text) => {
+        if (el && el._instance && el._instance.props && el._instance.props.onChangeText) {
+          el._instance.props.onChangeText(text);
+        } else if (el && el.props && el.props.onChangeText) {
+          el.props.onChangeText(text);
+        }
+      }),
       scroll: jest.fn(),
     },
     waitFor: async (fn) => { return await fn(); },
