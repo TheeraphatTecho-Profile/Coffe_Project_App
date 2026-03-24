@@ -7,6 +7,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { ThemeProvider as RichThemeProvider } from './src/theme/ThemeProvider';
+import { ErrorBoundary, AuthErrorBoundary } from './src/components/ErrorBoundary';
 
 const AppContent = () => {
   const { colors, isDark } = useTheme();
@@ -20,18 +21,22 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <RichThemeProvider>
-            <AuthProvider>
-              <NavigationContainer>
-                <AppContent />
-              </NavigationContainer>
-            </AuthProvider>
-          </RichThemeProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <RichThemeProvider>
+              <AuthErrorBoundary>
+                <AuthProvider>
+                  <NavigationContainer>
+                    <AppContent />
+                  </NavigationContainer>
+                </AuthProvider>
+              </AuthErrorBoundary>
+            </RichThemeProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
