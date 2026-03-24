@@ -55,10 +55,6 @@ service cloud.firestore {
       allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidFarmData();
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
-      
-      // Indexes for better performance
-      ensure index on (user_id, created_at);
-      ensure index on (province, created_at);
     }
     
     // Harvests collection - users can only access their own harvests
@@ -68,10 +64,6 @@ service cloud.firestore {
       allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidHarvestData();
       allow delete: if isAuthenticated() && isOwner(resource.data.user_id);
       allow list: if isAuthenticated();
-      
-      // Indexes for better performance
-      ensure index on (user_id, harvest_date);
-      ensure index on (farm_id, harvest_date);
     }
     
     // Users collection - restricted access
