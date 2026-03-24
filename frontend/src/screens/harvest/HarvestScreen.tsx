@@ -16,6 +16,7 @@ import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../constants';
 import { HarvestService, Harvest } from '../../lib/firebaseDb';
 import { useAuth } from '../../context/AuthContext';
 import { showAlert } from '../../lib/alert';
+import ExportService from '../../lib/exportService';
 import {
   filterHarvests,
   getAvailableYears,
@@ -277,7 +278,25 @@ export const HarvestScreen: React.FC = () => {
             <Text style={styles.headerBrand}> สวนกาแฟเลย</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.addButton}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={async () => {
+                try {
+                  await ExportService.exportHarvests(
+                    filteredHarvests,
+                    filters.year !== 'ทั้งหมด' ? filters.year : undefined
+                  );
+                } catch (err) {
+                  showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถส่งออกรายงานได้');
+                }
+              }}
+            >
+              <Ionicons name="document-text-outline" size={20} color={COLORS.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => navigation.navigate('AddHarvest')}
+            >
               <Ionicons name="add" size={20} color={COLORS.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.notifButton}>

@@ -70,14 +70,14 @@ describe('Service Error Handling', () => {
         const farmData = {
           name: 'Test Farm',
           area: 10,
-          soil_type: 'loam',
-          water_source: 'river',
+          soilType: 'loam',
+          waterSource: 'river',
           province: 'เลย',
           district: 'ภูเรือ',
           altitude: 600,
           variety: 'Arabica',
-          tree_count: 1000,
-          planting_year: 2020,
+          treeCount: 1000,
+          plantingYear: 2020,
           notes: 'Test farm',
         };
 
@@ -91,14 +91,14 @@ describe('Service Error Handling', () => {
         const farmData = {
           name: 'Test Farm',
           area: 10,
-          soil_type: 'loam',
-          water_source: 'river',
+          soilType: 'loam',
+          waterSource: 'river',
           province: 'เลย',
           district: 'ภูเรือ',
           altitude: 600,
           variety: 'Arabica',
-          tree_count: 1000,
-          planting_year: 2020,
+          treeCount: 1000,
+          plantingYear: 2020,
           notes: 'Test farm',
         };
 
@@ -112,14 +112,14 @@ describe('Service Error Handling', () => {
         const farmData = {
           name: 'Test Farm',
           area: 10,
-          soil_type: 'loam',
-          water_source: 'river',
+          soilType: 'loam',
+          waterSource: 'river',
           province: 'เลย',
           district: 'ภูเรือ',
           altitude: 600,
           variety: 'Arabica',
-          tree_count: 1000,
-          planting_year: 2020,
+          treeCount: 1000,
+          plantingYear: 2020,
           notes: 'Test farm',
         };
 
@@ -214,10 +214,10 @@ describe('Service Error Handling', () => {
         });
 
         const harvestData = {
-          farm_id: mockFarmId,
-          harvest_date: '2024-03-15',
+          farmId: mockFarmId,
+          harvestDate: '2024-03-15',
           variety: 'Arabica',
-          weight_kg: 50,
+          weightKg: 50,
           income: 5000,
           shift: 'morning',
           notes: 'Good harvest',
@@ -231,10 +231,10 @@ describe('Service Error Handling', () => {
         mockAddDoc.mockRejectedValue(constraintError);
 
         const harvestData = {
-          farm_id: 'non-existent-farm',
-          harvest_date: '2024-03-15',
+          farmId: 'non-existent-farm',
+          harvestDate: '2024-03-15',
           variety: 'Arabica',
-          weight_kg: 50,
+          weightKg: 50,
           income: 5000,
           shift: 'morning',
           notes: 'Good harvest',
@@ -249,7 +249,7 @@ describe('Service Error Handling', () => {
         const validationError = new Error('Invalid update data');
         mockUpdateDoc.mockRejectedValue(validationError);
 
-        const invalidUpdate = { weight_kg: -100 };
+        const invalidUpdate = { weightKg: -100 };
         await expect(HarvestService.update('harvest-id', invalidUpdate)).rejects.toThrow('Invalid update data');
       });
     });

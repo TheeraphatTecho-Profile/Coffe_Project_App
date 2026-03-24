@@ -3,23 +3,23 @@ import type { Harvest } from '../../lib/firebaseDb';
 
 const baseHarvest = (overrides: Partial<Harvest> = {}): Harvest => ({
   id: overrides.id || 'h1',
-  farm_id: overrides.farm_id || 'farm-1',
-  harvest_date: overrides.harvest_date || '2024-03-15',
+  farmId: overrides.farmId || 'farm-1',
+  harvestDate: overrides.harvestDate || '2024-03-15',
   variety: overrides.variety || 'Arabica',
-  weight_kg: overrides.weight_kg ?? 50,
+  weightKg: overrides.weightKg ?? 50,
   income: overrides.income ?? 5000,
   shift: overrides.shift || 'morning',
   notes: overrides.notes || null,
-  created_at: overrides.created_at as any,
-  user_id: overrides.user_id || 'user-1',
+  createdAt: overrides.createdAt as any,
+  userId: overrides.userId || 'user-1',
   farms: overrides.farms || { name: 'Test Farm' },
 });
 
 describe('harvestFilters helpers', () => {
   const harvests: Harvest[] = [
-    baseHarvest({ id: 'h1', harvest_date: '2024-03-01', shift: 'morning', farm_id: 'farm-1', farms: { name: 'ภูหลวง' } }),
-    baseHarvest({ id: 'h2', harvest_date: '2023-12-10', shift: 'afternoon', farm_id: 'farm-2', farms: { name: 'ภูเรือ' }, weight_kg: 80 }),
-    baseHarvest({ id: 'h3', harvest_date: '2024-05-05', shift: 'evening', farm_id: 'farm-1', farms: { name: 'ภูหลวง' }, weight_kg: 20 }),
+    baseHarvest({ id: 'h1', harvestDate: '2024-03-01', shift: 'morning', farmId: 'farm-1', farms: { name: 'ภูหลวง' } }),
+    baseHarvest({ id: 'h2', harvestDate: '2023-12-10', shift: 'afternoon', farmId: 'farm-2', farms: { name: 'ภูเรือ' }, weightKg: 80 }),
+    baseHarvest({ id: 'h3', harvestDate: '2024-05-05', shift: 'evening', farmId: 'farm-1', farms: { name: 'ภูหลวง' }, weightKg: 20 }),
   ];
 
   describe('filterHarvests', () => {
