@@ -230,7 +230,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
               </View>
             ) : (
               recentHarvests.map((h, idx) => {
-                const date = h.harvest_date ? new Date(h.harvest_date) : new Date();
+                const date = h.harvestDate ? new Date(h.harvestDate) : new Date();
                 const day = date.getDate().toString();
                 const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
                 const month = monthNames[date.getMonth()] || '';
@@ -246,7 +246,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
                         {h.farms?.name || 'สวนกาแฟ'}
                       </Text>
                       <Text style={styles.activityDetail}>
-                        {h.variety || 'กาแฟ'} • {formatNumber(h.weight_kg)} กก. • ฿{formatNumber(h.income)}
+                        {h.variety || 'กาแฟ'} • {formatNumber(h.weightKg)} กก. • ฿{formatNumber(h.income)}
                       </Text>
                     </View>
                     <View style={styles.shiftBadge}>
