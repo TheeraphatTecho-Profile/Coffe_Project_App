@@ -26,8 +26,8 @@ describe('ThemeProvider', () => {
       expect.objectContaining({
         themeMode: 'light',
         colors: expect.objectContaining({
-          primary: '#3E2723',
-          background: '#FAF7F2',
+          primary: '#2E7D32',
+          background: '#F5F7FA',
         }),
       })
     );
@@ -49,8 +49,8 @@ describe('ThemeProvider', () => {
       expect.objectContaining({
         themeMode: 'dark',
         colors: expect.objectContaining({
-          primary: '#3E2723',
-          background: '#1A1A1A',
+          primary: '#4CAF50',
+          background: '#0F1419',
         }),
       })
     );
@@ -192,11 +192,11 @@ describe('ThemeProvider', () => {
 
     const colors = mockRender.mock.calls[0][0].colors;
     
-    expect(colors.coffeeBean).toBe('#3E2723');
-    expect(colors.coffeeLeaf).toBe('#4CAF50');
-    expect(colors.coffeeMilk).toBe('#D4A574');
-    expect(colors.mountain).toBe('#78909C');
-    expect(colors.soil).toBe('#6D4C41');
+    expect(colors.coffeeBean).toBe('#1A3C2A');
+    expect(colors.coffeeLeaf).toBe('#2E7D32');
+    expect(colors.coffeeMilk).toBe('#D4A84C');
+    expect(colors.mountain).toBe('#607D8B');
+    expect(colors.soil).toBe('#5D4037');
   });
 
   it('should provide status colors', () => {
@@ -213,9 +213,9 @@ describe('ThemeProvider', () => {
 
     const colors = mockRender.mock.calls[0][0].colors;
     
-    expect(colors.success).toBe('#4CAF50');
-    expect(colors.error).toBe('#E53935');
-    expect(colors.warning).toBe('#FF9800');
-    expect(colors.info).toBe('#2196F3');
+    expect(colors.success).toBe('#2E7D32');
+    expect(colors.error).toBe('#D32F2F');
+    expect(colors.warning).toBe('#F57C00');
+    expect(colors.info).toBe('#1976D2');
   });
 });
